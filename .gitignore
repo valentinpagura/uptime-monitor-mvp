@@ -1,0 +1,24 @@
+# Node
+node_modules/
+npm-debug.log
+.env
+.env.local
+dist/
+build/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+.docker/
+
+# Logs
+logs/
+*.log
