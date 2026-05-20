@@ -3,7 +3,7 @@ const dotenv = require('dotenv');  //dotenv → saca valores del archivo .env y 
 dotenv.config();
 const cors = require('cors');
 const pool = require('./config/database'); //traemos la configuracion del archivo de config de la carpeta declarada
-
+const authRoutes = require('./routes/auth');  //importamos las rutas de autenticacion y las guardamos en la variable authRoutes
 
 //MOLDE
 const express = require("express");  //importamos la libreria de express y la guardamos en la variable "express"
@@ -11,6 +11,10 @@ const app = express();  //creamos una instancia de express y la guardamos en la 
 
 //CONFIGURACION DEL SERVIDOR
 app.use(cors({ origin: process.env.CLIENT_URL }))  //configuramos cors para que solo permita peticiones desde el cliente
+app.use(express.json());  //configuramos express para que pueda parsear el cuerpo de las peticiones en formato json
+app.use('/auth', authRoutes);  //usamos las rutas de autenticacion para cualquier endpoint que empiece con /auth
+
+
 
 //ARMADO DE RUTAS (endpoints)
 app.get("/health", (req, res) => {
@@ -18,6 +22,8 @@ app.get("/health", (req, res) => {
 });
 
 //Creamos las tablas en la base de datos si no existen
+//id Se auto-incrementa
+//fecha_registro se llena solo con la fecha actual
 const createTables = async () => {
     try {
         await pool.query(`
@@ -25,7 +31,7 @@ const createTables = async () => {
         id SERIAL PRIMARY KEY,
         email VARCHAR(255) UNIQUE NOT NULL,
         password VARCHAR(255)  NOT NULL,
-        fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP             
       );
 
       CREATE TABLE IF NOT EXISTS sitios (
