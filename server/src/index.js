@@ -4,6 +4,7 @@ dotenv.config();
 const cors = require('cors');
 const pool = require('./config/database'); //traemos la configuracion del archivo de config de la carpeta declarada
 const authRoutes = require('./routes/auth');  //importamos las rutas de autenticacion y las guardamos en la variable authRoutes
+const authMiddleware = require('./middleware/auth');
 
 //MOLDE
 const express = require("express");  //importamos la libreria de express y la guardamos en la variable "express"
@@ -13,6 +14,8 @@ const app = express();  //creamos una instancia de express y la guardamos en la 
 app.use(cors({ origin: process.env.CLIENT_URL }))  //configuramos cors para que solo permita peticiones desde el cliente
 app.use(express.json());  //configuramos express para que pueda parsear el cuerpo de las peticiones en formato json
 app.use('/auth', authRoutes);  //usamos las rutas de autenticacion para cualquier endpoint que empiece con /auth
+const sitiosRoutes = require('./routes/sitios');
+app.use('/sitios', authMiddleware, sitiosRoutes); //Cualquier petición a /sitios primero pasa por authMiddleware
 
 
 

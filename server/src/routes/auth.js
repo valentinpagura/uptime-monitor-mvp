@@ -18,10 +18,12 @@ router.post('/register', async (req, res) => {
         );
         const usuario = result.rows[0];  //objeto JavaScript con los datos del usuario registrado (id, email, fecha_registro)
         
+        //el token es el resultado de la encriptacion de los datos!!!!
         const token = jwt.sign( //generamos un token con el id y email del usuario
             { id: usuario.id,  //accedemos al objeto JS y extraemos el id
             email: usuario.email },  //accedemos al objeto JS y extraemos el email
-            process.env.JWT_SECRET, { expiresIn: '24h' }); 
+            process.env.JWT_SECRET, { expiresIn: '24h' });  //guardamos en llave jwt.secret
+
 
         res.status(201).json({  //enviamos una respuesta con el token y los datos del usuario
             token: token,
