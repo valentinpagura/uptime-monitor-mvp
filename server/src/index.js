@@ -4,7 +4,7 @@ dotenv.config();
 const cors = require('cors');
 const pool = require('./config/database'); //traemos la configuracion del archivo de config de la carpeta declarada
 const authRoutes = require('./routes/auth');  //importamos las rutas de autenticacion y las guardamos en la variable authRoutes
-const authMiddleware = require('./middleware/auth');
+const authMiddleware = require('./middleware/auth_m.js');  //importamos el middleware de autenticacion y lo guardamos en la variable authMiddleware
 
 //MOLDE
 const express = require("express");  //importamos la libreria de express y la guardamos en la variable "express"
