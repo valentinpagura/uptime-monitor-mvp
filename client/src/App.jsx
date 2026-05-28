@@ -1,22 +1,29 @@
-import { useState, useEffect } from "react";
-
+import { useContext, useState } from 'react';
+import { AuthContext } from './contexts/AuthContext';
+import { WelcomePage } from './pages/WelcomePage';
+import { LoginPage } from './pages/LoginPage';
+import { DashboardPage } from './pages/DashboardPage';
 
 function App() {
-  const [status, setStatus] = useState(null);
+  const { user } = useContext(AuthContext);
+  const [currentPage, setCurrentPage] = useState('welcome');
 
-  useEffect(() => {
-    fetch("http://localhost:5000/health")  //hace petición HTTP al Backend
-      .then((res) => res.json())
-      .then((data) => setStatus(data.status))    //promesa que se cumple si todo sale bien
-      .catch(err => setStatus('error'));     //promesa que se cumple si hay un error
-  }, []);  //el corchete vacío dice "ejecuta esto solo cuando monta"
+  // Si está logueado → Dashboard
+  if (user) {
+    return <DashboardPage />;
+  }
+
+  // Si no está logueado → Welcome o LoginPage
+  if (currentPage === 'login') {
+    return <LoginPage onBackClick={() => setCurrentPage('welcome')} />;
+  }
 
   return (
-    <div>
-      <h1>Uptime Monitor MVP</h1>
-      <p>Status: {status}</p>
-    </div>
+    <WelcomePage
+      onLoginClick={() => setCurrentPage('login')}
+      onRegisterClick={() => setCurrentPage('login')} // Ambos van a LoginPage (hay toggle)
+    />
   );
-
 }
+
 export default App;
