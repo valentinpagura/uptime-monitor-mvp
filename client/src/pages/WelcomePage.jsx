@@ -4,19 +4,15 @@ import { AuthContext } from '../contexts/AuthContext';
 export function WelcomePage({ onLoginClick, onRegisterClick }) {
   const { user } = useContext(AuthContext);
 
-  // Si ya está logueado, redirige a dashboard
   if (user) {
     return null;
   }
 
   return (
     <div style={styles.container}>
-      {/* Fondo con gradiente */}
       <div style={styles.gradient}></div>
 
-      {/* Contenido principal */}
       <div style={styles.content}>
-        {/* Header con logo */}
         <div style={styles.header}>
           <div style={styles.logoContainer}>
             <div style={styles.logo}>📊</div>
@@ -24,7 +20,6 @@ export function WelcomePage({ onLoginClick, onRegisterClick }) {
           </div>
         </div>
 
-        {/* Descripción */}
         <div style={styles.description}>
           <h2 style={styles.title}>Monitorea la disponibilidad de tus sitios</h2>
           <p style={styles.subtitle}>
@@ -33,7 +28,6 @@ export function WelcomePage({ onLoginClick, onRegisterClick }) {
           </p>
         </div>
 
-        {/* Cards de características */}
         <div style={styles.features}>
           <div style={styles.featureCard}>
             <span style={styles.featureIcon}>⚡</span>
@@ -54,7 +48,6 @@ export function WelcomePage({ onLoginClick, onRegisterClick }) {
           </div>
         </div>
 
-        {/* Botones de acción */}
         <div style={styles.buttonContainer}>
           <button 
             onClick={onRegisterClick}
@@ -75,7 +68,6 @@ export function WelcomePage({ onLoginClick, onRegisterClick }) {
           </button>
         </div>
 
-        {/* Footer */}
         <div style={styles.footer}>
           <p style={styles.footerText}>© 2025 Uptime Monitor. Todos los derechos reservados.</p>
         </div>
@@ -92,7 +84,6 @@ const styles = {
     overflow: 'hidden',
     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
   },
-
   gradient: {
     position: 'absolute',
     top: 0,
@@ -102,7 +93,6 @@ const styles = {
     background: 'linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #4facfe 75%, #00f2fe 100%)',
     zIndex: 1,
   },
-
   content: {
     position: 'relative',
     zIndex: 2,
@@ -115,23 +105,19 @@ const styles = {
     textAlign: 'center',
     padding: '20px',
   },
-
   header: {
     marginBottom: '40px',
   },
-
   logoContainer: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     gap: '15px',
   },
-
   logo: {
     fontSize: '48px',
     filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.2))',
   },
-
   logoText: {
     fontSize: '36px',
     fontWeight: '700',
@@ -139,12 +125,10 @@ const styles = {
     letterSpacing: '-0.5px',
     textShadow: '0 4px 8px rgba(0,0,0,0.2)',
   },
-
   description: {
     maxWidth: '600px',
     marginBottom: '50px',
   },
-
   title: {
     fontSize: '48px',
     fontWeight: '700',
@@ -152,7 +136,6 @@ const styles = {
     lineHeight: '1.2',
     textShadow: '0 4px 8px rgba(0,0,0,0.2)',
   },
-
   subtitle: {
     fontSize: '18px',
     fontWeight: '300',
@@ -161,7 +144,6 @@ const styles = {
     lineHeight: '1.6',
     textShadow: '0 2px 4px rgba(0,0,0,0.1)',
   },
-
   features: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
@@ -170,7 +152,6 @@ const styles = {
     width: '100%',
     marginBottom: '50px',
   },
-
   featureCard: {
     background: 'rgba(255, 255, 255, 0.15)',
     backdropFilter: 'blur(10px)',
@@ -180,26 +161,22 @@ const styles = {
     transition: 'all 0.3s ease',
     cursor: 'default',
   },
-
   featureIcon: {
     fontSize: '32px',
     display: 'block',
     marginBottom: '12px',
   },
-
   featureTitle: {
     fontSize: '18px',
     fontWeight: '600',
     margin: '0 0 8px 0',
   },
-
   featureText: {
     fontSize: '14px',
     margin: 0,
     opacity: 0.9,
     lineHeight: '1.5',
   },
-
   buttonContainer: {
     display: 'flex',
     gap: '16px',
@@ -207,7 +184,6 @@ const styles = {
     flexWrap: 'wrap',
     marginBottom: '60px',
   },
-
   button: {
     padding: '14px 32px',
     fontSize: '16px',
@@ -220,25 +196,21 @@ const styles = {
     textTransform: 'uppercase',
     letterSpacing: '0.5px',
   },
-
   buttonPrimary: {
     background: '#fff',
     color: '#667eea',
     minWidth: '200px',
   },
-
   buttonSecondary: {
     background: 'rgba(255, 255, 255, 0.2)',
     color: '#fff',
     border: '2px solid #fff',
     minWidth: '200px',
   },
-
   footer: {
     marginTop: 'auto',
     paddingBottom: '30px',
   },
-
   footerText: {
     fontSize: '14px',
     margin: 0,

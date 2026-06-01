@@ -8,12 +8,10 @@ function App() {
   const { user } = useContext(AuthContext);
   const [currentPage, setCurrentPage] = useState('welcome');
 
-  // Si está logueado → Dashboard
   if (user) {
     return <DashboardPage />;
   }
 
-  // Si no está logueado → Welcome o LoginPage
   if (currentPage === 'login') {
     return <LoginPage onBackClick={() => setCurrentPage('welcome')} />;
   }
@@ -21,7 +19,7 @@ function App() {
   return (
     <WelcomePage
       onLoginClick={() => setCurrentPage('login')}
-      onRegisterClick={() => setCurrentPage('login')} // Ambos van a LoginPage (hay toggle)
+      onRegisterClick={() => setCurrentPage('login')}
     />
   );
 }
