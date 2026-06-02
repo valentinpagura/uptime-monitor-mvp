@@ -20,7 +20,7 @@ async function login(email, password) {
     try {
         const data = await loginUser(email, password);
         if (data.token) {
-            saveToken(data.token);
+            saveToken(data.token);  //usamos funciones de token.js para guardar el token en localStorage
             setToken(data.token);
             setUser(data.usuario);
         } else {

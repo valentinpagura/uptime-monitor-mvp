@@ -6,6 +6,8 @@ const pool = require('./config/database'); //traemos la configuracion del archiv
 const authRoutes = require('./routes/auth');  //importamos las rutas de autenticacion y las guardamos en la variable authRoutes
 const authMiddleware = require('./middleware/auth_m.js');  //importamos el middleware de autenticacion y lo guardamos en la variable authMiddleware
 
+
+
 //MOLDE
 const express = require("express");  //importamos la libreria de express y la guardamos en la variable "express"
 const app = express();  //creamos una instancia de express y la guardamos en la variable "app"
@@ -68,3 +70,13 @@ app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);   //imprimimos en consola que el servidor se esta ejecutando en el puerto 5000
 });
 
+// ── WORKER (node-cron) ─────────────────────────────────────────────────────
+const cron = require('node-cron');
+const workerLoop = require('./worker');
+
+// Ejecutar worker cada 5 minutos
+cron.schedule('*/5 * * * *', async () => {
+  await workerLoop();
+});
+
+console.log('[CRON] Worker iniciado. Se ejecutará cada 5 minutos.');

@@ -1,3 +1,7 @@
+//Registramos y validamos el registro que se hizo en AuthContext con las funciones de api.js importadas en ese archivo.
+//Este archivo se encarga de manejar autenticacion de usuarios, creacion de tokens y hasheos de passwords. 
+//Mandamos el token a guardarlo en token.js para guardarlo en localStorage y usarlo en las peticiones al backend.
+
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
