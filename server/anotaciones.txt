@@ -1,0 +1,27 @@
+Usuario completa formulario en CreateSitioForm.jsx
+    ↓ Click "Crear Sitio"
+    ↓ llama createSitio() de api.js
+    ↓ envía JSON al Backend
+    ↓
+Backend index.js
+    ↓ parsea el JSON
+    ↓ pasa a authMiddleware
+    ↓
+authMiddleware verifica JWT
+    ↓ agrega req.user.id = 3
+    ↓ continúa a sitios.js
+    ↓
+sitios.js procesa
+    ↓ valida que URL no esté vacía
+    ↓ INSERT en PostgreSQL
+    ↓
+PostgreSQL guarda
+    ↓ devuelve sitio con ID=1
+    ↓
+sitios.js responde
+    ↓ res.json({ sitio })
+    ↓
+Frontend recibe respuesta
+    ↓ onSitioCreated()
+    ↓
+Dashboard se actualiza (muestra el nuevo sitio)

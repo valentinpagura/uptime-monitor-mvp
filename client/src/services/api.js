@@ -42,7 +42,8 @@ export async function loginUser(email, password) {
 }
 
 //CREAR SITIO
-export async function createSitio(url, nombre, frecuencia, token) {
+//Enviar los datos al Backend de forma correcta.
+export async function createSitio(url, nombre, frecuencia, token) {  //lo usamos en CreateSitioForm.jsx
     const response = await fetch(`${API_BASE_URL}/sitios`, {
         method: "POST",
         headers: {
@@ -90,4 +91,16 @@ export async function deleteSitio(sitioId, token) {
 
     const data = await response.json();
     return data;
+}
+
+// GET /sitios/:id/logs
+export async function getLogs(sitioId, token) {
+  const response = await fetch(`${API_BASE_URL}/sitios/${sitioId}/logs`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  const data = await response.json();
+  return data;
 }

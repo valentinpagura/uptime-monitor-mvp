@@ -1,3 +1,5 @@
+//archivo que maneja TODA la lógica de CRUD y logs de sitios
+
 const express = require('express');
 const router = express.Router();
 const pool = require('../config/database');
@@ -82,6 +84,40 @@ router.delete('/:id', async (req, res) => {
   } catch (err) {
     console.error('Error eliminando sitio:', err);
     res.status(500).json({ message: 'Error eliminando sitio' });
+  }
+});
+
+// Obtiene últimos logs de un sitio específico
+router.get('/:id/logs', async (req, res) => {
+  const sitioId = req.params.id;
+  const usuario_id = req.user.id; // del Middleware JWT
+
+  try {
+    // Verifica que el sitio exista y pertenezca al usuario
+    const sitioResult = await pool.query(
+      'SELECT * FROM sitios WHERE id = $1 AND usuario_id = $2',
+      [sitioId, usuario_id]
+    );
+
+    if (sitioResult.rowCount === 0) {
+      return res.status(404).json({ message: 'Sitio no encontrado o no pertenece al usuario' });
+    }
+
+    // Traer últimos 10 logs del sitio ordenados por fecha descendente
+    const logsResult = await pool.query(
+      'SELECT * FROM logs WHERE sitio_id = $1 ORDER BY created_at DESC LIMIT 10',
+      [sitioId]
+    );
+
+    // Devolver logs
+    res.json({
+      message: 'Logs obtenidos exitosamente',
+      logs: logsResult.rows
+    });
+
+  } catch (err) {
+    console.error('Error obteniendo logs:', err);
+    res.status(500).json({ message: 'Error obteniendo logs' });
   }
 });
 

@@ -16,7 +16,7 @@ export function CreateSitioForm({ onSitioCreated }) {
     setError(null);
 
     try {
-      await createSitio(url, nombre || null, frecuencia, token);
+      await createSitio(url, nombre || null, frecuencia, token);  // Llama a la función de la API para crear el sitio
       setUrl('');
       setNombre('');
       setFrecuencia(5);

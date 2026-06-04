@@ -26,8 +26,15 @@ export function DashboardPage() {
   }
 
   useEffect(() => {
+  loadSitios();
+  
+  // Auto-refresh cada 10 segundos
+  const interval = setInterval(() => {
     loadSitios();
-  }, [token]);
+  }, 10000);  // 10 segundos
+  
+  return () => clearInterval(interval);  // Limpiar interval al desmontar
+}, [token]);
 
   async function handleDelete(sitioId) {
     try {
