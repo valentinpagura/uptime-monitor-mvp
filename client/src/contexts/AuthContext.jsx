@@ -1,4 +1,4 @@
-import { createContext, useState } from 'react'; //almacén global
+import { createContext, useState, useEffect } from 'react'; //almacén global
 import { saveToken, getToken, removeToken } from '../utils/token'; //importamos funnciones de token.js
 import { loginUser, registerUser } from '../services/api'; //importamos funciones de api.js
 
@@ -11,6 +11,28 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => getToken()); // se inicializa LEYENDO de localStorage
   const [loading, setLoading] = useState(false); //para mostrar "cargando..." mientras hace la petición
   const [error, setError] = useState(null);
+
+
+  // 🔴 NUEVO: useEffect para restaurar la sesión al recargar la página
+  useEffect(() => {
+  if(token){
+    try{
+      const base64Payload = token.split('.')[1];
+      const payload = JSON.parse(atob(base64Payload));
+
+      const isExpired = payload.exp * 1000 < Date.now();
+
+      if (isExpired) {
+        logout(); // Si el token ha expirado, cerramos sesión
+      }else {
+        setUser({ id: payload.id, email: payload.email, fecha_registro: payload.fecha_registro });
+      }
+    }catch(err){
+      console.error("Error al decodificar token:", err);
+      logout(); // Si el token es inválido, cerramos sesión
+    }
+  }
+}, []); // // El array vacío asegura que esto solo corra una vez al montar la aplicación
 
   // Función para LOGIN
 async function login(email, password) {
