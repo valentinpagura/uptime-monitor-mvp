@@ -1,3 +1,4 @@
+//Router: muestra diferentes páginas según el estado de autenticación del usuario (si está logueado o no) y maneja la navegación entre la página de bienvenida, login y dashboard.
 import { useContext, useState } from 'react';
 import { AuthContext } from './contexts/AuthContext';
 import { WelcomePage } from './pages/WelcomePage';

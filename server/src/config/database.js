@@ -1,3 +1,4 @@
+//Pool de conexiones a PostgreSQL, lo usamos para ejecutar consultas a la base de datos desde el backend
 const { Pool } = require('pg');
 
 

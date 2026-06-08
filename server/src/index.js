@@ -1,4 +1,6 @@
 //IMPORTACIONES
+
+//ENTRY POINT del servidor, aquí se configura el servidor, las rutas y se inicia el worker de node-cron
 const dotenv = require('dotenv');  //dotenv → saca valores del archivo .env y los pone en process.env
 dotenv.config();
 const cors = require('cors');

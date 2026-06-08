@@ -1,3 +1,4 @@
+//Estado global: user,token,loading,error. Funciones para login, register y logout. useEffect para restaurar sesión al recargar la página.
 import { createContext, useState, useEffect } from 'react'; //almacén global
 import { saveToken, getToken, removeToken } from '../utils/token'; //importamos funnciones de token.js
 import { loginUser, registerUser } from '../services/api'; //importamos funciones de api.js
@@ -43,8 +44,8 @@ async function login(email, password) {
         const data = await loginUser(email, password);
         if (data.token) {
             saveToken(data.token);  //usamos funciones de token.js para guardar el token en localStorage
-            setToken(data.token);
-            setUser(data.usuario);
+            setToken(data.token);   //guardamos el token en el state para usarlo en las peticiones al backend
+            setUser(data.usuario);  //guardamos los datos del usuario en el state para mostrar su información en la UI
         } else {
             setError(data.message || "Error desconocido");
         }
