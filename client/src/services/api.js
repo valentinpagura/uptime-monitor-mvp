@@ -104,3 +104,15 @@ export async function getLogs(sitioId, token) {
   const data = await response.json();
   return data;
 }
+
+// GET /sitios/:id/stats - Obtener estadísticas de un sitio específico
+export async function getSitioStats(sitioId, token) {
+  const response = await fetch(`${API_BASE_URL}/sitios/${sitioId}/stats`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  const data = await response.json();
+  return data;
+}

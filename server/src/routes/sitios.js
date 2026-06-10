@@ -4,67 +4,81 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../config/database');
 
-router.get('/stats', async (req, res) => {
-  const usuario_id = req.user.id; //extraemos el usuario, ya que es requerido para buscar sus logs
+// GET /sitios/:id/stats - Obtener estadísticas de un sitio específico
+router.get('/:id/stats', async (req, res) => {
+  const sitioId = req.params.id;
+  const usuario_id = req.user.id;
+
   try {
-    const statsResult = await pool.query(`
-      SELECT id FROM sitios WHERE usuario_id = $1
-    `, [usuario_id]);
-    
-  const sitios_obtenidos = statsResult.rows; //array de objetos con los sitios del usuario}
-    if (sitios_obtenidos.length === 0) {
-      return res.status(404).json({ message: 'No se encontraron sitios para el usuario' });
-      total_Online = 0;
-      total_Offline = 0;
-      Latencia_Promedio = 0;
-      ultimoChequeo = null;
+    // 1. Verificar que el sitio existe y pertenece al usuario
+    const sitioResult = await pool.query(
+      'SELECT * FROM sitios WHERE id = $1 AND usuario_id = $2',
+      [sitioId, usuario_id]
+    );
+
+    if (sitioResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Sitio no encontrado' });
     }
 
-    let total_Online = 0;
-    let total_Offline = 0;
-    let Latencia_Promedio = 0;
-    let ultimoChequeo = null;
+    const sitio = sitioResult.rows[0];
 
-    for (const sitio of sitios_obtenidos) {
-      const logsResult = await pool.query(`
-        SELECT is_online, latencia_ms, created_at FROM logs WHERE sitio_id = $1 ORDER BY created_at DESC LIMIT 1
-      `, [sitio.id]);
+    // 2. Traer todos los logs del sitio
+    const logsResult = await pool.query(
+      'SELECT is_online, latencia_ms, created_at FROM logs WHERE sitio_id = $1 ORDER BY created_at DESC',
+      [sitioId]
+    );
 
-      if (logsResult.rowCount > 0) {
-        const log = logsResult.rows[0];
+    const logs = logsResult.rows;
 
-      if (log.is_online) {
-          total_Online++;
-        }
-        else {
-          total_Offline++;
-        }
-      if (log.latencia_ms) {
-          latencias.push(log.latencia_ms);
-        }
-      
-      if (!ultimoChequeo || log.created_at > ultimoChequeo) {
-          ultimoChequeo = log.created_at;
-        }
-      }
+    if (logs.length === 0) {
+      return res.json({
+        message: 'Sin datos de monitoreo aún',
+        sitio: { id: sitio.id, url: sitio.url, nombre: sitio.nombre },
+        latenciaPromedio: 0,
+        latenciaMin: 0,
+        latenciaMax: 0,
+        ultimoLog: null,
+        uptime: 0,
+        totalChequeos: 0
+      });
     }
 
-     // 3. Calcular latencia promedio
+    // 3. Calcular estadísticas
+    const latencias = logs
+      .filter(log => log.latencia_ms)
+      .map(log => log.latencia_ms);
+
     const latenciaPromedio = latencias.length > 0
       ? Math.round(latencias.reduce((a, b) => a + b, 0) / latencias.length)
       : 0;
 
-      // 4. Responder
+    const latenciaMin = latencias.length > 0 ? Math.min(...latencias) : 0;
+    const latenciaMax = latencias.length > 0 ? Math.max(...latencias) : 0;
+
+    const onlineCount = logs.filter(log => log.is_online).length;
+    const uptime = Math.round((onlineCount / logs.length) * 100);
+
+    const ultimoLog = logs[0];
+
+    // 4. Responder
     res.json({
-      message: 'Estadísticas obtenidas',
-      totalOnline,
-      totalOffline,
+      message: 'Estadísticas del sitio obtenidas',
+      sitio: {
+        id: sitio.id,
+        url: sitio.url,
+        nombre: sitio.nombre
+      },
       latenciaPromedio,
-      ultimoChequeo
+      latenciaMin,
+      latenciaMax,
+      ultimoLog,
+      uptime,
+      totalChequeos: logs.length,
+      logs: logs.slice(0, 10)  // Últimos 10 logs
     });
 
   } catch (err) {
-    console.error('Error obteniendo estadísticas:', err);
+    console.error('Error obteniendo estadísticas del sitio:', err);
     res.status(500).json({ message: 'Error obteniendo estadísticas' });
   }
 });
@@ -187,6 +201,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-
+module.exports = router;
 
 
