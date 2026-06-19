@@ -34,22 +34,35 @@ async function workerLoop() {
             try {
                 const startTime = Date.now();
 
-                //hacer GET request a la URL del sitio
-                response = await axios.get(x.url, { timeout: 5000 }); //timeout de 5 segundos
-                
+                response = await axios.get(x.url, {
+                  timeout: 5000,
+                  headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                    'Accept-Language': 'en-US,en;q=0.5',
+                  },
+                  maxRedirects: 5,
+                  validateStatus: null,
+                });
+
                 latencia = Date.now() - startTime;
                 statusCode = response.status;
-                isOnline = statusCode >= 200 && statusCode < 400; //consideramos online si el status code es 2xx o 3xx
+                isOnline = statusCode >= 200 && statusCode < 400;
                 
                 console.log(`[WORKER] ✅ ${x.url} | Status: ${statusCode} | Latencia: ${latencia}ms`);
 
             } catch (error) {
-                //Si el request falla, guardamos como OFFLINE
                 latencia = null;
-                statusCode = null;
+                statusCode = error.response?.status || null;
                 isOnline = false;
-                
-                console.log(`[WORKER] ❌ ${x.url} | Error: ${error.message}`);
+
+                if (error.code === 'ECONNABORTED') {
+                  console.log(`[WORKER] ❌ ${x.url} | Timeout (5s)`);
+                } else if (error.response) {
+                  console.log(`[WORKER] ❌ ${x.url} | HTTP ${error.response.status}`);
+                } else {
+                  console.log(`[WORKER] ❌ ${x.url} | ${error.message}`);
+                }
             }
             
             //Guardar en logs (SIEMPRE, online u offline)

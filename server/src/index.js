@@ -51,7 +51,7 @@ const createTables = async () => {
 
       CREATE TABLE IF NOT EXISTS logs (
         id SERIAL PRIMARY KEY,
-        sitio_id INTEGER NOT NULL REFERENCES sitios(id),
+        sitio_id INTEGER NOT NULL REFERENCES sitios(id) ON DELETE CASCADE,
         status_code INTEGER,
         latencia_ms INTEGER,
         is_online BOOLEAN,

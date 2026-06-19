@@ -1,109 +1,98 @@
-export function LatencyGauge({ latencia, max = 500 }) {
-  // Calcular el ángulo de la aguja (0-180 grados)
-  const angle = (latencia / max) * 180;
+export function LatencyGauge({ latencia, max = 500, noData }) {
+  const fraction = noData ? 0 : Math.min(Math.max(latencia / max, 0), 1);
 
-  // Determinar color según latencia
-  let color;
-  if (latencia < 200) color = '#28a745'; // Verde
-  else if (latencia < 400) color = '#ffc107'; // Naranja
-  else color = '#dc3545'; // Rojo
+  const activeColor = latencia < 200 ? 'var(--success)' : latencia < 400 ? 'var(--warning)' : 'var(--error)';
+  const color = noData ? 'var(--text-disabled)' : activeColor;
+
+  const theta = Math.PI - fraction * Math.PI;
+  const arcX = 100 + 80 * Math.cos(theta);
+  const arcY = 100 - 80 * Math.sin(theta);
+  const largeArc = fraction > 0.5 ? 1 : 0;
 
   return (
-    <div style={styles.container}>
-      <svg viewBox="0 0 200 120" style={styles.svg}>
-        {/* Arco de fondo */}
-        <path
-          d="M 20 100 A 80 80 0 0 1 180 100"
-          stroke="#e0e0e0"
-          strokeWidth="10"
-          fill="none"
-          strokeLinecap="round"
-        />
-
-        {/* Arco de progreso (coloreado) */}
-        <path
-          d={`M 20 100 A 80 80 0 0 1 ${20 + 160 * (latencia / max)} ${
-            100 - 80 * Math.sin((latencia / max) * Math.PI)
-          }`}
-          stroke={color}
-          strokeWidth="10"
-          fill="none"
-          strokeLinecap="round"
-        />
-
-        {/* Aguja */}
-        <g transform={`rotate(${angle} 100 100)`}>
-          <line
-            x1="100"
-            y1="100"
-            x2="100"
-            y2="30"
-            stroke={color}
-            strokeWidth="3"
+    <div style={styles.card}>
+      <div style={styles.gaugeWrapper}>
+        <svg viewBox="0 0 200 120" style={styles.svg}>
+          <path
+            d="M 20 100 A 80 80 0 0 1 180 100"
+            stroke="var(--border-default)"
+            strokeWidth="8"
+            fill="none"
+            strokeLinecap="round"
           />
-          <circle cx="100" cy="100" r="4" fill={color} />
-        </g>
 
-        {/* Etiquetas (0, 250, 500) */}
-        <text x="20" y="115" fontSize="12" textAnchor="middle" fill="#666">
-          0
-        </text>
-        <text x="100" y="115" fontSize="12" textAnchor="middle" fill="#666">
-          {max / 2}
-        </text>
-        <text x="180" y="115" fontSize="12" textAnchor="middle" fill="#666">
-          {max}
-        </text>
-      </svg>
+          {!noData && (
+            <path
+              d={`M 20 100 A 80 80 0 ${largeArc} 1 ${arcX.toFixed(1)} ${arcY.toFixed(1)}`}
+              stroke={color}
+              strokeWidth="8"
+              fill="none"
+              strokeLinecap="round"
+              style={{ transition: 'stroke 0.6s ease' }}
+            />
+          )}
 
-      {/* Valor central */}
-      <div style={styles.valueBox}>
-        <span style={{ ...styles.latenciaValue, color }}>
-          {latencia}
-        </span>
-        <span style={styles.latenciaUnit}>ms</span>
+          <text x="20" y="117" fontSize="11" textAnchor="middle" fill="var(--text-disabled)" fontFamily="var(--font-mono)">0</text>
+          <text x="100" y="117" fontSize="11" textAnchor="middle" fill="var(--text-disabled)" fontFamily="var(--font-mono)">{max / 2}</text>
+          <text x="180" y="117" fontSize="11" textAnchor="middle" fill="var(--text-disabled)" fontFamily="var(--font-mono)">{max}</text>
+        </svg>
+
+        <div style={styles.valueBox}>
+          {noData ? (
+            <>
+              <span style={{ ...styles.value, color: 'var(--text-disabled)' }}>—</span>
+              <span style={styles.unit}>No data</span>
+            </>
+          ) : (
+            <>
+              <span style={{ ...styles.value, color }}>{latencia}</span>
+              <span style={styles.unit}>ms</span>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
 const styles = {
-  container: {
-    position: 'relative',
-    width: '100%',
-    maxWidth: '300px',
-    margin: '0 auto',
-    backgroundColor: '#fff',
-    border: '1px solid #e0e0e0',
-    borderRadius: '8px',
-    padding: '20px',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.08)',
+  card: {
+    background: 'transparent',
   },
-
+  gaugeWrapper: {
+    position: 'relative',
+    display: 'flex',
+    justifyContent: 'center',
+    minHeight: '160px',
+  },
   svg: {
     width: '100%',
+    maxWidth: '280px',
     height: 'auto',
+    display: 'block',
   },
-
   valueBox: {
     position: 'absolute',
-    top: '50%',
+    top: '52%',
     left: '50%',
     transform: 'translate(-50%, -50%)',
     textAlign: 'center',
+    pointerEvents: 'none',
     zIndex: 10,
   },
-
-  latenciaValue: {
+  value: {
     display: 'block',
     fontSize: '32px',
-    fontWeight: 'bold',
+    fontWeight: '700',
+    lineHeight: 1,
+    letterSpacing: '-0.5px',
+    fontFamily: 'var(--font-mono)',
   },
-
-  latenciaUnit: {
+  unit: {
     display: 'block',
     fontSize: '12px',
-    color: '#999',
+    color: 'var(--text-tertiary)',
     fontWeight: '500',
+    marginTop: '4px',
   },
 };

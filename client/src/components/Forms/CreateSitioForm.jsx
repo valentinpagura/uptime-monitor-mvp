@@ -16,7 +16,7 @@ export function CreateSitioForm({ onSitioCreated }) {
     setError(null);
 
     try {
-      await createSitio(url, nombre || null, frecuencia, token);  // Llama a la función de la API para crear el sitio
+      await createSitio(url, nombre || null, frecuencia, token);
       setUrl('');
       setNombre('');
       setFrecuencia(5);
@@ -30,98 +30,106 @@ export function CreateSitioForm({ onSitioCreated }) {
 
   return (
     <form onSubmit={handleSubmit} style={styles.form}>
-      <h2 style={styles.title}>Agregar Sitio</h2>
+      <h2 style={styles.title}>Add Site</h2>
 
-      <div style={styles.group}>
-        <label style={styles.label}>URL *</label>
-        <input
-          type="url"
-          placeholder="https://ejemplo.com"
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          required
-          style={styles.input}
-        />
-      </div>
-
-      <div style={styles.group}>
-        <label style={styles.label}>Nombre (opcional)</label>
-        <input
-          type="text"
-          placeholder="Mi sitio"
-          value={nombre}
-          onChange={(e) => setNombre(e.target.value)}
-          style={styles.input}
-        />
-      </div>
-
-      <div style={styles.group}>
-        <label style={styles.label}>Frecuencia (minutos)</label>
-        <input
-          type="number"
-          min="1"
-          value={frecuencia}
-          onChange={(e) => setFrecuencia(parseInt(e.target.value))}
-          style={styles.input}
-        />
+      <div style={styles.row}>
+        <div style={{ flex: 2 }}>
+          <label style={styles.label}>URL *</label>
+          <input
+            type="url"
+            placeholder="https://example.com"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            required
+            style={styles.input}
+          />
+        </div>
+        <div style={{ flex: 1 }}>
+          <label style={styles.label}>Name</label>
+          <input
+            type="text"
+            placeholder="My site"
+            value={nombre}
+            onChange={(e) => setNombre(e.target.value)}
+            style={styles.input}
+          />
+        </div>
+        <div style={{ width: '120px' }}>
+          <label style={styles.label}>Interval</label>
+          <input
+            type="number"
+            min="1"
+            value={frecuencia}
+            onChange={(e) => setFrecuencia(parseInt(e.target.value))}
+            style={styles.input}
+          />
+        </div>
+        <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+          <button type="submit" disabled={loading} style={styles.button}>
+            {loading ? 'Adding...' : 'Add Site'}
+          </button>
+        </div>
       </div>
 
       {error && <p style={styles.error}>{error}</p>}
-
-      <button type="submit" disabled={loading} style={styles.button}>
-        {loading ? 'Creando...' : 'Crear Sitio'}
-      </button>
     </form>
   );
 }
 
 const styles = {
   form: {
-    backgroundColor: '#fff',
-    padding: '20px',
-    borderRadius: '8px',
-    border: '1px solid #e0e0e0',
-    marginBottom: '30px',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.08)',
+    padding: 'var(--space-5) var(--space-6)',
   },
   title: {
-    margin: '0 0 20px 0',
-    fontSize: '18px',
+    margin: '0 0 var(--space-4) 0',
+    fontSize: '13px',
     fontWeight: '600',
-    color: '#1e1e2e',
+    color: 'var(--text-secondary)',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
   },
-  group: {
-    marginBottom: '16px',
+  row: {
+    display: 'flex',
+    gap: 'var(--space-3)',
+    alignItems: 'flex-end',
+    flexWrap: 'wrap',
   },
   label: {
     display: 'block',
     marginBottom: '6px',
-    fontSize: '14px',
-    fontWeight: '500',
-    color: '#333',
+    fontSize: '11px',
+    fontWeight: '600',
+    color: 'var(--text-tertiary)',
+    textTransform: 'uppercase',
+    letterSpacing: '0.3px',
   },
   input: {
     width: '100%',
-    padding: '10px 12px',
-    border: '1px solid #ddd',
-    borderRadius: '6px',
-    fontSize: '14px',
+    padding: '9px 12px',
+    border: '1px solid var(--border-default)',
+    borderRadius: 'var(--radius-sm)',
+    fontSize: '13px',
     boxSizing: 'border-box',
+    background: 'var(--bg-elevated)',
+    color: 'var(--text-primary)',
+    outline: 'none',
+    transition: 'border-color var(--transition-fast)',
   },
   error: {
-    color: '#dc3545',
-    fontSize: '14px',
-    marginBottom: '12px',
+    color: 'var(--error)',
+    fontSize: '12px',
+    marginTop: 'var(--space-3)',
   },
   button: {
-    width: '100%',
-    padding: '12px',
-    backgroundColor: '#007bff',
+    padding: '9px 20px',
+    background: 'var(--brand-primary)',
     color: '#fff',
     border: 'none',
-    borderRadius: '6px',
-    fontSize: '14px',
+    borderRadius: 'var(--radius-sm)',
+    fontSize: '13px',
     fontWeight: '600',
     cursor: 'pointer',
+    whiteSpace: 'nowrap',
+    transition: 'background var(--transition-fast)',
   },
 };

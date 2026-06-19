@@ -119,33 +119,51 @@ router.get('/:id/logs', async (req, res) => {
 );
 
 // Elimina un sitio si pertenece al usuario autenticado
-// Verifica tanto el ID del sitio como la propiedad del usuario
+// Elimina en cascada los logs asociados para evitar violación de FK
 router.delete('/:id', async (req, res) => {
   const sitioId = req.params.id;
   const usuario_id = req.user.id;
 
-  // Valida que el ID del sitio esté presente
   if (!sitioId) {
     return res.status(400).json({ error: 'El ID del sitio es requerido' });
   }
 
+  const client = await pool.connect();
+
   try {
-    // Elimina solo si sitio existe y pertenece al usuario (seguridad)
-    const result = await pool.query(
+    await client.query('BEGIN');
+
+    // Verificar propiedad
+    const sitioCheck = await client.query(
+      'SELECT id FROM sitios WHERE id = $1 AND usuario_id = $2',
+      [sitioId, usuario_id]
+    );
+
+    if (sitioCheck.rowCount === 0) {
+      await client.query('ROLLBACK');
+      client.release();
+      return res.status(404).json({ message: 'Sitio no encontrado o no pertenece al usuario' });
+    }
+
+    // Eliminar logs asociados primero
+    await client.query('DELETE FROM logs WHERE sitio_id = $1', [sitioId]);
+
+    // Eliminar el sitio
+    const result = await client.query(
       'DELETE FROM sitios WHERE id = $1 AND usuario_id = $2 RETURNING *',
       [sitioId, usuario_id]
     );
 
-    // Si no se eliminó nada, sitio no existe o no pertenece al usuario
-    if (result.rowCount === 0) {
-      return res.status(404).json({ message: 'Sitio no encontrado o no pertenece al usuario' });
-    }
+    await client.query('COMMIT');
+    client.release();
 
     res.status(200).json({
       message: 'Sitio eliminado exitosamente',
       sitio: result.rows[0]
     });
   } catch (err) {
+    await client.query('ROLLBACK');
+    client.release();
     console.error('Error eliminando sitio:', err);
     res.status(500).json({ message: 'Error eliminando sitio' });
   }

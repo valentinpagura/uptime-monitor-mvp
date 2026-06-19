@@ -2,11 +2,10 @@ export function StatCard({ title, value, unit, color, icon }) {
   return (
     <div style={styles.card}>
       <div style={styles.header}>
-        <span style={styles.icon}>{icon}</span>
+        <span style={{ ...styles.iconWrap, color }}>{icon}</span>
         <h3 style={styles.title}>{title}</h3>
       </div>
-      
-      <div style={styles.value}>
+      <div style={styles.valueRow}>
         <span style={{ ...styles.number, color }}>{value}</span>
         <span style={styles.unit}>{unit}</span>
       </div>
@@ -16,50 +15,45 @@ export function StatCard({ title, value, unit, color, icon }) {
 
 const styles = {
   card: {
-    backgroundColor: '#fff',
-    border: '1px solid #e0e0e0',
-    borderRadius: '8px',
-    padding: '16px',
-    minWidth: '200px',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.08)',
-    textAlign: 'center',
+    background: 'var(--bg-surface)',
+    border: '1px solid var(--border-subtle)',
+    borderRadius: 'var(--radius-lg)',
+    padding: 'var(--space-5)',
   },
-
   header: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
-    marginBottom: '12px',
+    gap: 'var(--space-3)',
+    marginBottom: 'var(--space-4)',
   },
-
-  icon: {
-    fontSize: '20px',
+  iconWrap: {
+    fontSize: '16px',
+    width: '20px',
+    textAlign: 'center',
   },
-
   title: {
     margin: 0,
-    fontSize: '12px',
-    color: '#666',
+    fontSize: '11px',
+    color: 'var(--text-tertiary)',
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: '0.5px',
   },
-
-  value: {
+  valueRow: {
     display: 'flex',
     alignItems: 'baseline',
-    justifyContent: 'center',
     gap: '4px',
   },
-
   number: {
-    fontSize: '28px',
-    fontWeight: 'bold',
+    fontSize: '26px',
+    fontWeight: '700',
+    letterSpacing: '-0.5px',
+    fontFamily: 'var(--font-mono)',
+    lineHeight: 1.2,
   },
-
   unit: {
     fontSize: '12px',
-    color: '#999',
+    color: 'var(--text-tertiary)',
     fontWeight: '500',
   },
 };

@@ -1,15 +1,27 @@
 import { useState, useContext } from 'react';
 import { AuthContext } from '../contexts/AuthContext';
 
-export function LoginPage({ onRegisterClick }) {
+export function RegisterPage({ onLoginClick }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [passwordConfirm, setPasswordConfirm] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const { login, loading, error } = useContext(AuthContext);
+  const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
+  const [validationError, setValidationError] = useState(null);
+  const { register, loading, error } = useContext(AuthContext);
 
   async function handleSubmit(e) {
     e.preventDefault();
-    await login(email, password);
+    if (password !== passwordConfirm) {
+      setValidationError('Passwords do not match');
+      return;
+    }
+    if (password.length < 6) {
+      setValidationError('Password must be at least 6 characters');
+      return;
+    }
+    setValidationError(null);
+    await register(email, password);
   }
 
   return (
@@ -25,8 +37,8 @@ export function LoginPage({ onRegisterClick }) {
             <span style={styles.logoText}>uptimemonitor</span>
           </div>
 
-          <h1 style={styles.welcome}>Welcome back</h1>
-          <p style={styles.subtitle}>Sign in to your account to continue</p>
+          <h1 style={styles.welcome}>Create account</h1>
+          <p style={styles.subtitle}>Start monitoring your websites for free</p>
 
           <form onSubmit={handleSubmit} style={styles.form}>
             <div style={styles.field}>
@@ -58,7 +70,7 @@ export function LoginPage({ onRegisterClick }) {
                 <input
                   className="auth-input"
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="••••••••"
+                  placeholder="Min. 6 characters"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -70,28 +82,54 @@ export function LoginPage({ onRegisterClick }) {
                   style={styles.eyeBtn}
                 >
                   {showPassword ? (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" />
-                      <line x1="1" y1="1" x2="23" y2="23" />
-                    </svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23" /></svg>
                   ) : (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                      <circle cx="12" cy="12" r="3" />
-                    </svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
                   )}
                 </button>
               </div>
             </div>
 
-            {error && (
+            <div style={styles.field}>
+              <label style={styles.label}>Confirm password</label>
+              <div style={styles.inputBox}>
+                <svg style={styles.inputIcon} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0110 0v4" /></svg>
+                <input
+                  className="auth-input"
+                  type={showPasswordConfirm ? 'text' : 'password'}
+                  placeholder="Repeat your password"
+                  value={passwordConfirm}
+                  onChange={(e) => setPasswordConfirm(e.target.value)}
+                  required
+                  style={{ paddingLeft: '44px' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPasswordConfirm(!showPasswordConfirm)}
+                  style={styles.eyeBtn}
+                >
+                  {showPasswordConfirm ? (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23" /></svg>
+                  ) : (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div style={styles.hints}>
+              <span style={{ ...styles.hint, color: password.length >= 6 ? '#16a34a' : '#9ca3af' }}>
+                {password.length >= 6 ? '✓' : '○'} At least 6 characters
+              </span>
+              <span style={{ ...styles.hint, color: password === passwordConfirm && passwordConfirm.length > 0 ? '#16a34a' : '#9ca3af' }}>
+                {password === passwordConfirm && passwordConfirm.length > 0 ? '✓' : '○'} Passwords match
+              </span>
+            </div>
+
+            {(validationError || error) && (
               <div style={styles.errorBox}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="8" x2="12" y2="12" />
-                  <line x1="12" y1="16" x2="12.01" y2="16" />
-                </svg>
-                <span>{error}</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+                <span>{validationError || error}</span>
               </div>
             )}
 
@@ -99,17 +137,17 @@ export function LoginPage({ onRegisterClick }) {
               {loading ? (
                 <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                   <span style={{ display: 'inline-block', width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} />
-                  Signing in...
+                  Creating account...
                 </span>
               ) : (
-                'Sign in'
+                'Create account'
               )}
             </button>
           </form>
 
           <p style={styles.footer}>
-            Don't have an account?{' '}
-            <span onClick={onRegisterClick} style={styles.link}>Sign up</span>
+            Already have an account?{' '}
+            <span onClick={onLoginClick} style={styles.link}>Sign in</span>
           </p>
         </div>
       </div>
@@ -123,24 +161,24 @@ export function LoginPage({ onRegisterClick }) {
         </div>
 
         <div style={styles.rightContent}>
-          <div style={styles.badge}>NEW</div>
-          <h2 style={styles.rightTitle}>Monitor your websites in real-time</h2>
+          <div style={styles.badge}>FREE</div>
+          <h2 style={styles.rightTitle}>Start monitoring in seconds</h2>
           <p style={styles.rightDesc}>
-            Get instant alerts when your sites go down, analyze performance with detailed charts, and keep your services running 24/7.
+            Add your first website, set the check frequency, and get instant alerts when something goes wrong. No credit card required.
           </p>
 
           <div style={styles.statGrid}>
             <div style={styles.statItem}>
-              <span style={styles.statValue}>99.9%</span>
-              <span style={styles.statLabel}>Avg. Uptime</span>
+              <span style={styles.statValue}>100%</span>
+              <span style={styles.statLabel}>Free</span>
             </div>
             <div style={styles.statItem}>
-              <span style={styles.statValue}>&lt;5m</span>
-              <span style={styles.statLabel}>Detection</span>
+              <span style={styles.statValue}>5min</span>
+              <span style={styles.statLabel}>Check interval</span>
             </div>
             <div style={styles.statItem}>
-              <span style={styles.statValue}>24/7</span>
-              <span style={styles.statLabel}>Monitoring</span>
+              <span style={styles.statValue}>SSL</span>
+              <span style={styles.statLabel}>Encrypted</span>
             </div>
           </div>
         </div>
@@ -205,7 +243,7 @@ const styles = {
   form: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '20px',
+    gap: '18px',
   },
   field: {
     display: 'flex',
@@ -237,6 +275,19 @@ const styles = {
     padding: 0,
     display: 'flex',
     zIndex: 1,
+  },
+  hints: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px',
+    padding: '12px 14px',
+    background: '#f9fafb',
+    borderRadius: '8px',
+    border: '1px solid #e5e7eb',
+  },
+  hint: {
+    fontSize: '12px',
+    transition: 'color 0.2s',
   },
   errorBox: {
     display: 'flex',
@@ -323,11 +374,12 @@ const styles = {
     display: 'inline-block',
     padding: '4px 12px',
     borderRadius: '20px',
-    background: 'rgba(255,255,255,0.15)',
-    border: '1px solid rgba(255,255,255,0.25)',
+    background: 'rgba(34,197,94,0.2)',
+    border: '1px solid rgba(34,197,94,0.3)',
     fontSize: '11px',
     fontWeight: '700',
     letterSpacing: '1px',
+    color: '#86efac',
     marginBottom: '20px',
   },
   rightTitle: {
@@ -357,7 +409,7 @@ const styles = {
   statValue: {
     fontSize: '22px',
     fontWeight: '700',
-    color: '#93c5fd',
+    color: '#86efac',
   },
   statLabel: {
     fontSize: '11px',

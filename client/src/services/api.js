@@ -1,118 +1,66 @@
-//Este archivo centraliza TODAS las llamadas HTTP al backend:
-//loginUser(email, password)	POST /auth/login	{ token, usuario }
-//registerUser(email, password)	POST /auth/register	{ token, usuario }
-//getSitios(token)	GET /sitios	Lista de sitios
-//createSitio(url, nombre, frecuencia, token)	POST /sitios	Sitio creado
-//deleteSitio(sitioId, token)	DELETE /sitios/:id	Confirmación
+const API_BASE_URL = "";
 
-const API_BASE_URL = "http://localhost:5000"; //Asegúrate de que esta URL coincida con la del backend
+async function request(url, options = {}) {
+  const response = await fetch(`${API_BASE_URL}${url}`, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
 
+  const data = await response.json();
 
+  if (!response.ok) {
+    throw new Error(data.message || data.error || `Error ${response.status}`);
+  }
 
-//REGISTER
+  return data;
+}
+
 export async function registerUser(email, password) {
-    const response = await fetch(`${API_BASE_URL}/auth/register`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-             email,
-             password })
-    });
-
-    const data = await response.json();
-    return data;
+  return request("/auth/register", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  });
 }
 
-//LOGIN
 export async function loginUser(email, password) {
-    const response = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-             email,
-             password })
-    });
-
-    const data = await response.json();
-    return data;
+  return request("/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  });
 }
 
-//CREAR SITIO
-//Enviar los datos al Backend de forma correcta.
-export async function createSitio(url, nombre, frecuencia, token) {  //lo usamos en CreateSitioForm.jsx
-    const response = await fetch(`${API_BASE_URL}/sitios`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}` // Usamos token para autenticar la solicitud
-        },
-        body: JSON.stringify({
-           url: url,
-            nombre: nombre,
-            frecuencia_minutos: frecuencia
-        })
-    });
-
-    const data = await response.json();
-    return data;
-}
-
-
-
-//LISTAR SITIOS
 export async function getSitios(token) {
-    const response = await fetch(`${API_BASE_URL}/sitios`, {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}` // Usamos token para autenticar la solicitud
-        }
-    });
-
-    const data = await response.json();
-    return data;
+  return request("/sitios", {
+    headers: { "Authorization": `Bearer ${token}` },
+  });
 }
 
+export async function createSitio(url, nombre, frecuencia, token) {
+  return request("/sitios", {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${token}` },
+    body: JSON.stringify({ url, nombre, frecuencia_minutos: frecuencia }),
+  });
+}
 
-//ELIMINAR SITIO
 export async function deleteSitio(sitioId, token) {
-    const response = await fetch(`${API_BASE_URL}/sitios/${sitioId}`, {
-        method: "DELETE",
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}` // Usamos token para autenticar la solicitud
-        }
-
-    });
-
-    const data = await response.json();
-    return data;
+  return request(`/sitios/${sitioId}`, {
+    method: "DELETE",
+    headers: { "Authorization": `Bearer ${token}` },
+  });
 }
 
-// GET /sitios/:id/logs
 export async function getLogs(sitioId, token) {
-  const response = await fetch(`${API_BASE_URL}/sitios/${sitioId}/logs`, {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${token}`
-    }
+  return request(`/sitios/${sitioId}/logs`, {
+    headers: { "Authorization": `Bearer ${token}` },
   });
-  const data = await response.json();
-  return data;
 }
 
-// GET /sitios/:id/stats - Obtener estadísticas de un sitio específico
 export async function getSitioStats(sitioId, token) {
-  const response = await fetch(`${API_BASE_URL}/sitios/${sitioId}/stats`, {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${token}`
-    }
+  return request(`/sitios/${sitioId}/stats`, {
+    headers: { "Authorization": `Bearer ${token}` },
   });
-  const data = await response.json();
-  return data;
 }

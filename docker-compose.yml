@@ -3,21 +3,21 @@ version: '3.8'
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: uptime_monitor_db
+    container_name: uptime_monitor_db_opencode
     environment:
       POSTGRES_USER: uptime_user
       POSTGRES_PASSWORD: uptime_pass
       POSTGRES_DB: uptime_monitor
     ports:
-      - "5432:5432"
+      - "5434:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data_opencode:/var/lib/postgresql/data
     networks:
-      - uptime_network
+      - uptime_network_opencode
 
 volumes:
-  postgres_data:
+  postgres_data_opencode:
 
 networks:
-  uptime_network:
+  uptime_network_opencode:
     driver: bridge

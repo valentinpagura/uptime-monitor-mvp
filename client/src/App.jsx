@@ -1,8 +1,8 @@
-//Router: muestra diferentes páginas según el estado de autenticación del usuario (si está logueado o no) y maneja la navegación entre la página de bienvenida, login y dashboard.
 import { useContext, useState } from 'react';
 import { AuthContext } from './contexts/AuthContext';
 import { WelcomePage } from './pages/WelcomePage';
 import { LoginPage } from './pages/LoginPage';
+import { RegisterPage } from './pages/RegisterPage';
 import { DashboardPage } from './pages/DashboardPage';
 
 function App() {
@@ -13,14 +13,18 @@ function App() {
     return <DashboardPage />;
   }
 
+  if (currentPage === 'register') {
+    return <RegisterPage onLoginClick={() => setCurrentPage('login')} />;
+  }
+
   if (currentPage === 'login') {
-    return <LoginPage onBackClick={() => setCurrentPage('welcome')} />;
+    return <LoginPage onRegisterClick={() => setCurrentPage('register')} />;
   }
 
   return (
     <WelcomePage
       onLoginClick={() => setCurrentPage('login')}
-      onRegisterClick={() => setCurrentPage('login')}
+      onRegisterClick={() => setCurrentPage('register')}
     />
   );
 }

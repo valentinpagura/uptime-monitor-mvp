@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useContext, useRef } from 'react';
 import { AuthContext } from '../contexts/AuthContext';
 import { getSitioStats } from '../services/api';
 import { StatCard } from '../components/StatCard';
@@ -10,29 +10,41 @@ export function SitioDetailPage({ sitioId, onBack }) {
   const [stats, setStats] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
+  const mountedRef = useRef(true);
 
-  // Cargar estadísticas al montar
   useEffect(() => {
-    async function cargarStats() {
-      try {
-        const data = await getSitioStats(sitioId, token);
+    mountedRef.current = true;
+    cargarStats();
+    const interval = setInterval(cargarStats, 10000);
+    return () => {
+      mountedRef.current = false;
+      clearInterval(interval);
+    };
+  }, [sitioId, token]);
+
+  async function cargarStats() {
+    try {
+      const data = await getSitioStats(sitioId, token);
+      if (mountedRef.current) {
         setStats(data);
         setError(null);
-      } catch (err) {
-        console.error('Error cargando stats:', err);
-        setError('Error cargando estadísticas');
-      } finally {
+        setCargando(false);
+      }
+    } catch (err) {
+      if (mountedRef.current) {
+        setError(err.message || 'Error loading stats');
         setCargando(false);
       }
     }
-
-    cargarStats();
-  }, [sitioId, token]);
+  }
 
   if (cargando) {
     return (
       <div style={styles.container}>
-        <p style={styles.loading}>Cargando estadísticas...</p>
+        <div style={styles.centerState}>
+          <div style={styles.spinner} />
+          <p style={{ color: 'var(--text-tertiary)', fontSize: '14px' }}>Loading statistics...</p>
+        </div>
       </div>
     );
   }
@@ -40,205 +52,218 @@ export function SitioDetailPage({ sitioId, onBack }) {
   if (error) {
     return (
       <div style={styles.container}>
-        <p style={styles.error}>❌ {error}</p>
-        <button onClick={onBack} style={styles.backBtn}>
-          ← Volver
-        </button>
+        <div style={styles.centerState}>
+          <p style={{ color: 'var(--error)', fontSize: '15px' }}>❌ {error}</p>
+          <button onClick={onBack} style={styles.backBtn}>← Back to Dashboard</button>
+        </div>
       </div>
     );
   }
 
-  if (!stats) {
-    return (
-      <div style={styles.container}>
-        <p style={styles.error}>Sin datos</p>
-      </div>
-    );
-  }
+  const noData = !stats?.ultimoLog;
+
+  const statusColor = noData ? 'var(--text-tertiary)' : stats.ultimoLog?.is_online ? 'var(--success)' : 'var(--error)';
+  const statusLabel = noData ? 'Pending' : stats.ultimoLog?.is_online ? 'Online' : 'Offline';
 
   return (
     <div style={styles.container}>
-      {/* Header */}
       <div style={styles.header}>
         <button onClick={onBack} style={styles.backBtn}>
-          ← Volver
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+          Back
         </button>
-        <div>
-          <h1 style={styles.title}>{stats.sitio.nombre || stats.sitio.url}</h1>
-          <p style={styles.url}>{stats.sitio.url}</p>
+        <div style={{ flex: 1 }}>
+          <h1 style={styles.title}>{stats?.sitio?.nombre || stats?.sitio?.url || 'Site'}</h1>
+          <p style={styles.url}>{stats?.sitio?.url}</p>
         </div>
-        <div style={styles.statusBadge}>
-          {stats.ultimoLog?.is_online ? (
-            <>
-              <span style={styles.statusDot} />
-              <span style={styles.statusText}>ONLINE</span>
-            </>
-          ) : (
-            <>
-              <span style={{ ...styles.statusDot, backgroundColor: '#dc3545' }} />
-              <span style={styles.statusText}>OFFLINE</span>
-            </>
-          )}
+        <div style={{ ...styles.statusBadge, background: `${statusColor}15`, color: statusColor }}>
+          <span style={{ ...styles.statusDot, background: statusColor }} />
+          {statusLabel}
         </div>
       </div>
 
-      {/* Cards de estadísticas */}
-      <div style={styles.cardsGrid}>
-        <StatCard
-          title="Latencia Promedio"
-          value={stats.latenciaPromedio}
-          unit="ms"
-          color="#667eea"
-          icon="⚡"
-        />
-        <StatCard
-          title="Latencia Mínima"
-          value={stats.latenciaMin}
-          unit="ms"
-          color="#28a745"
-          icon="📉"
-        />
-        <StatCard
-          title="Latencia Máxima"
-          value={stats.latenciaMax}
-          unit="ms"
-          color="#dc3545"
-          icon="📈"
-        />
-        <StatCard
-          title="Uptime"
-          value={stats.uptime}
-          unit="%"
-          color={stats.uptime >= 95 ? '#28a745' : '#ffc107'}
-          icon="✅"
-        />
+      <section style={styles.section} aria-labelledby="metrics-heading">
+        <h2 id="metrics-heading" style={styles.sectionTitle}>Key Metrics</h2>
+        <div style={styles.cardsGrid}>
+          <StatCard title="Avg Latency" value={stats.latenciaPromedio} unit="ms" color="var(--brand-primary)" icon="⚡" />
+          <StatCard title="Min Latency" value={stats.latenciaMin} unit="ms" color="var(--success)" icon="📉" />
+          <StatCard title="Max Latency" value={stats.latenciaMax} unit="ms" color="var(--error)" icon="📈" />
+          <StatCard
+            title="Uptime"
+            value={stats.uptime}
+            unit="%"
+            color={stats.uptime >= 95 ? 'var(--success)' : 'var(--warning)'}
+            icon="✓"
+          />
+        </div>
+      </section>
+
+      <div style={styles.twoCol}>
+        <section style={styles.section} aria-labelledby="gauge-heading">
+          <h2 id="gauge-heading" style={styles.sectionTitle}>Current Latency</h2>
+          <div style={styles.gaugeCard}>
+            <LatencyGauge latencia={stats.latenciaPromedio} max={500} noData={noData} />
+          </div>
+        </section>
+
+        <section style={{ ...styles.section, flex: 1 }} aria-labelledby="info-heading">
+          <h2 id="info-heading" style={styles.sectionTitle}>Details</h2>
+          <div style={styles.infoBox}>
+            <div style={styles.infoRow}>
+              <span style={styles.infoLabel}>Total checks</span>
+              <span style={styles.infoValue}>{stats.totalChequeos}</span>
+            </div>
+            {stats.ultimoLog && (
+              <div style={styles.infoRow}>
+                <span style={styles.infoLabel}>Last check</span>
+                <span style={styles.infoValue}>{new Date(stats.ultimoLog.created_at).toLocaleString()}</span>
+              </div>
+            )}
+            {stats.ultimoLog && (
+              <div style={styles.infoRow}>
+                <span style={styles.infoLabel}>Status</span>
+                <span style={{ ...styles.infoValue, color: statusColor }}>{statusLabel}</span>
+              </div>
+            )}
+          </div>
+        </section>
       </div>
 
-      {/* Gauge de latencia */}
-      <div style={styles.gaugeContainer}>
-        <LatencyGauge latencia={stats.latenciaPromedio} max={500} />
-      </div>
-
-      {/* Gráfico histórico */}
-      {stats.logs && stats.logs.length > 0 && (
-        <LatencyChart logs={stats.logs} />
+      {stats.logs?.length > 0 && (
+        <section style={styles.section} aria-labelledby="history-heading">
+          <h2 id="history-heading" style={styles.sectionTitle}>Latency History</h2>
+          <LatencyChart logs={stats.logs} />
+        </section>
       )}
-
-      {/* Info adicional */}
-      <div style={styles.infoBox}>
-        <p style={styles.infoText}>
-          <strong>Total de chequeos:</strong> {stats.totalChequeos}
-        </p>
-        {stats.ultimoLog && (
-          <p style={styles.infoText}>
-            <strong>Último chequeo:</strong>{' '}
-            {new Date(stats.ultimoLog.created_at).toLocaleString('es-AR')}
-          </p>
-        )}
-      </div>
     </div>
   );
 }
 
 const styles = {
   container: {
-    padding: '20px',
-    backgroundColor: '#f9f9f9',
+    padding: 'var(--space-7) var(--space-8)',
+    background: 'var(--bg-base)',
     minHeight: '100vh',
   },
-
   header: {
     display: 'flex',
     alignItems: 'center',
-    gap: '20px',
-    backgroundColor: '#fff',
-    padding: '20px',
-    borderRadius: '8px',
-    marginBottom: '20px',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.08)',
+    gap: 'var(--space-4)',
+    background: 'var(--bg-surface)',
+    padding: 'var(--space-5) var(--space-6)',
+    borderRadius: 'var(--radius-lg)',
+    marginBottom: 'var(--space-6)',
+    border: '1px solid var(--border-subtle)',
   },
-
   backBtn: {
+    display: 'flex',
+    alignItems: 'center',
     padding: '8px 16px',
-    backgroundColor: '#667eea',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '4px',
+    background: 'transparent',
+    color: 'var(--text-secondary)',
+    border: '1px solid var(--border-default)',
+    borderRadius: 'var(--radius-sm)',
     cursor: 'pointer',
-    fontSize: '14px',
-    fontWeight: '600',
+    fontSize: '13px',
+    fontWeight: '500',
+    whiteSpace: 'nowrap',
+    transition: 'all var(--transition-fast)',
   },
-
   title: {
-    margin: '0 0 4px 0',
-    fontSize: '24px',
-    color: '#1e1e2e',
+    margin: '0 0 2px 0',
+    fontSize: '20px',
+    fontWeight: '700',
+    color: 'var(--text-primary)',
   },
-
   url: {
     margin: 0,
-    fontSize: '14px',
-    color: '#666',
+    fontSize: '13px',
+    color: 'var(--text-tertiary)',
   },
-
   statusBadge: {
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
-    marginLeft: 'auto',
-  },
-
-  statusDot: {
-    width: '12px',
-    height: '12px',
-    borderRadius: '50%',
-    backgroundColor: '#28a745',
-  },
-
-  statusText: {
+    padding: '6px 14px',
+    borderRadius: '20px',
     fontWeight: '600',
-    color: '#28a745',
+    fontSize: '12px',
   },
-
+  statusDot: {
+    width: '8px',
+    height: '8px',
+    borderRadius: '50%',
+  },
+  section: {
+    marginBottom: 'var(--space-6)',
+  },
+  sectionTitle: {
+    fontSize: '12px',
+    fontWeight: '600',
+    color: 'var(--text-tertiary)',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+    marginBottom: 'var(--space-4)',
+  },
   cardsGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-    gap: '16px',
-    marginBottom: '20px',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
+    gap: 'var(--space-4)',
   },
-
-  gaugeContainer: {
-    display: 'flex',
-    justifyContent: 'center',
-    marginBottom: '20px',
+  twoCol: {
+    display: 'grid',
+    gridTemplateColumns: '360px 1fr',
+    gap: 'var(--space-6)',
+    marginBottom: 'var(--space-6)',
   },
-
+  gaugeCard: {
+    background: 'var(--bg-surface)',
+    border: '1px solid var(--border-subtle)',
+    borderRadius: 'var(--radius-lg)',
+    padding: 'var(--space-5)',
+  },
   infoBox: {
-    backgroundColor: '#fff',
-    border: '1px solid #e0e0e0',
-    borderRadius: '8px',
-    padding: '16px',
-    marginTop: '20px',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.08)',
+    background: 'var(--bg-surface)',
+    border: '1px solid var(--border-subtle)',
+    borderRadius: 'var(--radius-lg)',
+    padding: 'var(--space-5) var(--space-6)',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 'var(--space-3)',
   },
-
-  infoText: {
-    margin: '8px 0',
-    fontSize: '14px',
-    color: '#666',
+  infoRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingBottom: 'var(--space-3)',
+    borderBottom: '1px solid var(--border-subtle)',
   },
-
-  loading: {
-    textAlign: 'center',
-    fontSize: '16px',
-    color: '#666',
-    padding: '40px 0',
+  infoLabel: {
+    fontSize: '13px',
+    color: 'var(--text-tertiary)',
+    fontWeight: 500,
   },
-
-  error: {
-    textAlign: 'center',
-    fontSize: '16px',
-    color: '#dc3545',
-    padding: '40px 0',
+  infoValue: {
+    fontSize: '13px',
+    color: 'var(--text-primary)',
+    fontWeight: 600,
+  },
+  centerState: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '80px 0',
+    gap: 'var(--space-4)',
+  },
+  spinner: {
+    width: '22px',
+    height: '22px',
+    border: '2px solid var(--border-default)',
+    borderTopColor: 'var(--brand-primary)',
+    borderRadius: '50%',
+    animation: 'spin 0.7s linear infinite',
   },
 };
