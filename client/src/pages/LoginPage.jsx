@@ -39,67 +39,51 @@ export function LoginPage() {
   }
 
   return (
-    <div style={styles.page}>
-      {/* IZQUIERDA */}
-      <div style={styles.left}>
+    <main style={styles.page}>
+      {/* LEFT — Auth Panel */}
+      <section style={styles.leftPanel}>
         <div style={styles.leftInner}>
-          {/* Logo */}
-          <div style={styles.logo}>
-            <div style={styles.logoIcon}>📊</div>
-            <div>
-              <h1 style={styles.logoTitle}>Uptime Monitor</h1>
-              <p style={styles.logoSub}>Monitoreo de sitios web</p>
-            </div>
-          </div>
+          <header style={styles.header}>
+            <h1 style={styles.logo}>
+              <span style={styles.logoIcon}>💜</span> UPTIME MONITOR
+            </h1>
+            <p style={styles.subtitle}>Enter your credentials to access the NOC dashboard.</p>
+          </header>
 
-          {/* Card */}
           <div style={styles.card}>
             {/* Tabs */}
-            <div style={styles.tabs}>
+            <nav style={styles.tabs}>
               <button
                 onClick={() => setMode('login')}
                 style={{
                   ...styles.tab,
-                  ...(mode === 'login' ? styles.tabActive : styles.tabInactive),
+                  ...(mode === 'login' ? styles.tabActive : {}),
                 }}
               >
-                Iniciar sesión
+                Sign In
               </button>
               <button
                 onClick={() => setMode('register')}
                 style={{
                   ...styles.tab,
-                  ...(mode === 'register' ? styles.tabActive : styles.tabInactive),
+                  ...(mode === 'register' ? styles.tabActive : {}),
                 }}
               >
-                Registrarse
+                Register
               </button>
-            </div>
+            </nav>
 
             {/* LOGIN FORM */}
             {mode === 'login' && (
               <form onSubmit={handleLogin} style={styles.form}>
-                <div>
-                  <h2 style={styles.formTitle}>Bienvenido de nuevo</h2>
-                  <p style={styles.formSubtitle}>
-                    ¿No tienes cuenta?{' '}
-                    <span
-                      onClick={() => setMode('register')}
-                      style={styles.link}
-                    >
-                      Regístrate gratis
-                    </span>
-                  </p>
-                </div>
-
                 <div style={styles.field}>
-                  <label style={styles.label}>Correo electrónico</label>
-                  <div style={styles.inputBox}>
-                    <span style={styles.icon}>✉️</span>
+                  <label style={styles.label}>Email Address</label>
+                  <div className="auth-field-wrap">
+                    <span style={styles.fieldIcon}>✉️</span>
                     <input
-                      className="auth-input"
+                      className="auth-field-input"
                       type="email"
-                      placeholder="tu@email.com"
+                      placeholder="operator@domain.com"
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
                       required
@@ -108,13 +92,16 @@ export function LoginPage() {
                 </div>
 
                 <div style={styles.field}>
-                  <label style={styles.label}>Contraseña</label>
-                  <div style={styles.inputBox}>
-                    <span style={styles.icon}>🔒</span>
+                  <div style={styles.labelRow}>
+                    <label style={styles.label}>Password</label>
+                    <span style={styles.forgotLink}>Forgot?</span>
+                  </div>
+                  <div className="auth-field-wrap">
+                    <span style={styles.fieldIcon}>🔒</span>
                     <input
-                      className="auth-input"
+                      className="auth-field-input"
                       type={showLoginPwd ? 'text' : 'password'}
-                      placeholder="Tu contraseña"
+                      placeholder="••••••••"
                       value={loginPassword}
                       onChange={(e) => setLoginPassword(e.target.value)}
                       required
@@ -129,10 +116,17 @@ export function LoginPage() {
                   </div>
                 </div>
 
+                <div style={styles.rememberRow}>
+                  <label style={styles.rememberLabel}>
+                    <input type="checkbox" style={styles.checkbox} />
+                    <span>Remember device</span>
+                  </label>
+                </div>
+
                 {error && <div style={styles.errorBox}>⚠️ {error}</div>}
 
-                <button className="auth-btn" type="submit" disabled={loading}>
-                  {loading ? 'Iniciando sesión...' : 'Iniciar sesión →'}
+                <button type="submit" disabled={loading} className="auth-submit-btn">
+                  {loading ? 'Initializing...' : 'Initialize Session'}
                 </button>
               </form>
             )}
@@ -140,27 +134,14 @@ export function LoginPage() {
             {/* REGISTER FORM */}
             {mode === 'register' && (
               <form onSubmit={handleRegister} style={styles.form}>
-                <div>
-                  <h2 style={styles.formTitle}>Crear cuenta</h2>
-                  <p style={styles.formSubtitle}>
-                    ¿Ya tienes cuenta?{' '}
-                    <span
-                      onClick={() => setMode('login')}
-                      style={styles.link}
-                    >
-                      Inicia sesión
-                    </span>
-                  </p>
-                </div>
-
                 <div style={styles.field}>
-                  <label style={styles.label}>Correo electrónico</label>
-                  <div style={styles.inputBox}>
-                    <span style={styles.icon}>✉️</span>
+                  <label style={styles.label}>Email Address</label>
+                  <div className="auth-field-wrap">
+                    <span style={styles.fieldIcon}>✉️</span>
                     <input
-                      className="auth-input"
+                      className="auth-field-input"
                       type="email"
-                      placeholder="tu@email.com"
+                      placeholder="operator@domain.com"
                       value={regEmail}
                       onChange={(e) => setRegEmail(e.target.value)}
                       required
@@ -169,13 +150,13 @@ export function LoginPage() {
                 </div>
 
                 <div style={styles.field}>
-                  <label style={styles.label}>Contraseña</label>
-                  <div style={styles.inputBox}>
-                    <span style={styles.icon}>🔒</span>
+                  <label style={styles.label}>Password</label>
+                  <div className="auth-field-wrap">
+                    <span style={styles.fieldIcon}>🔒</span>
                     <input
-                      className="auth-input"
+                      className="auth-field-input"
                       type={showRegPwd ? 'text' : 'password'}
-                      placeholder="Mínimo 6 caracteres"
+                      placeholder="••••••••"
                       value={regPassword}
                       onChange={(e) => setRegPassword(e.target.value)}
                       required
@@ -191,13 +172,13 @@ export function LoginPage() {
                 </div>
 
                 <div style={styles.field}>
-                  <label style={styles.label}>Confirmar contraseña</label>
-                  <div style={styles.inputBox}>
-                    <span style={styles.icon}>🔒</span>
+                  <label style={styles.label}>Confirm Password</label>
+                  <div className="auth-field-wrap">
+                    <span style={styles.fieldIcon}>🔒</span>
                     <input
-                      className="auth-input"
+                      className="auth-field-input"
                       type={showRegPwdConfirm ? 'text' : 'password'}
-                      placeholder="Repite tu contraseña"
+                      placeholder="••••••••"
                       value={regPasswordConfirm}
                       onChange={(e) => setRegPasswordConfirm(e.target.value)}
                       required
@@ -212,7 +193,6 @@ export function LoginPage() {
                   </div>
                 </div>
 
-                {/* Password hints */}
                 <div style={styles.hints}>
                   <span style={{
                     ...styles.hint,
@@ -235,218 +215,219 @@ export function LoginPage() {
                 )}
                 {error && <div style={styles.errorBox}>⚠️ {error}</div>}
 
-                <button className="auth-btn" type="submit" disabled={loading}>
-                  {loading ? 'Creando cuenta...' : 'Crear cuenta →'}
+                <button type="submit" disabled={loading} className="auth-submit-btn">
+                  {loading ? 'Initializing...' : 'Initialize Session'}
                 </button>
               </form>
             )}
           </div>
 
-          <p style={styles.footer}>
-            © 2026 Uptime Monitor. Todos los derechos reservados.
-          </p>
+          <footer style={styles.footer}>
+            © 2024 UPTIME MONITOR. <span style={styles.footerLink}>Terms</span> • <span style={styles.footerLink}>Privacy</span>
+          </footer>
         </div>
-      </div>
+      </section>
 
-      {/* DERECHA */}
-      <div style={styles.right}>
+      {/* RIGHT — Decorative Panel */}
+      <section style={styles.rightPanel}>
         <div style={styles.rightInner}>
-          <div style={styles.rightBadge}>NUEVO</div>
           <h2 style={styles.rightTitle}>
-            Monitorea tus sitios web en tiempo real
+            Enterprise-Grade <br /><span style={styles.rightAccent}>Infrastructure Visibility.</span>
           </h2>
           <p style={styles.rightDesc}>
-            Detecta caídas al instante, analiza el rendimiento y mantén tus sitios siempre en línea con estadísticas detalladas.
+            Real-time network telemetry, instant incident detection, and comprehensive global service monitoring for modern engineering teams.
           </p>
 
-          {/* Feature cards */}
-          <div style={styles.featureCards}>
-            {[
-              { icon: '⚡', title: 'Tiempo real', desc: 'Monitoreo cada 5 minutos' },
-              { icon: '📈', title: 'Estadísticas', desc: 'Gráficos de latencia y uptime' },
-              { icon: '🔔', title: 'Alertas', desc: 'Notificaciones instantáneas' },
-            ].map((f, i) => (
-              <div key={i} style={styles.featureCard}>
-                <span style={styles.featureCardIcon}>{f.icon}</span>
-                <div>
-                  <p style={styles.featureCardTitle}>{f.title}</p>
-                  <p style={styles.featureCardDesc}>{f.desc}</p>
-                </div>
-              </div>
-            ))}
+          <div style={styles.statsGrid}>
+            <div style={styles.statCard}>
+              <span style={styles.statLabel}>Global Uptime Avg</span>
+              <span style={styles.statValue}>99.999%</span>
+            </div>
+            <div style={styles.statCard}>
+              <span style={styles.statLabel}>Avg Detection Time</span>
+              <span style={{ ...styles.statValue, color: 'var(--auth-error)' }}>~45ms</span>
+            </div>
+            <div style={{ ...styles.statCard, gridColumn: '1 / -1' }}>
+              <span style={styles.statLabel}>Active Probes Globally</span>
+              <span style={{ ...styles.statValue, color: 'var(--auth-on-surface)' }}>1,024,592</span>
+            </div>
           </div>
 
-          {/* Stats */}
-          <div style={styles.stats}>
+          <ul style={styles.featureList}>
             {[
-              { value: '99.9%', label: 'Uptime promedio' },
-              { value: '<5min', label: 'Detección de caídas' },
-              { value: '24/7', label: 'Monitoreo continuo' },
-            ].map((s, i) => (
-              <div key={i} style={styles.stat}>
-                <p style={styles.statValue}>{s.value}</p>
-                <p style={styles.statLabel}>{s.label}</p>
-              </div>
+              { icon: '🌐', title: 'Multi-Protocol Monitoring', desc: 'Support for HTTP/S, TCP, UDP, ICMP, and custom gRPC health checks.' },
+              { icon: '🔔', title: 'Intelligent Alerting', desc: 'Multi-channel incident routing with automatic escalation policies.' },
+              { icon: '🌍', title: 'Distributed Tracing', desc: 'Monitor endpoint performance from 150+ global edge locations.' },
+            ].map((f, i) => (
+              <li key={i} style={styles.featureItem}>
+                <div style={styles.featureIconWrap}><span>{f.icon}</span></div>
+                <div>
+                  <h3 style={styles.featureTitle}>{f.title}</h3>
+                  <p style={styles.featureDesc}>{f.desc}</p>
+                </div>
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 }
 
 const styles = {
   page: {
     display: 'flex',
+    width: '100%',
     minHeight: '100vh',
-    backgroundColor: '#f5f7fa',
+    backgroundColor: 'var(--auth-bg)',
+    color: 'var(--auth-on-surface)',
+    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
   },
 
-  left: {
-    flex: '0 0 480px',
+  leftPanel: {
+    flex: '0 0 50%',
     display: 'flex',
-    alignItems: 'center',
+    flexDirection: 'column',
     justifyContent: 'center',
-    backgroundColor: '#fff',
-    padding: '40px',
-    boxShadow: '2px 0 20px rgba(0,0,0,0.06)',
+    padding: '32px 48px',
+    position: 'relative',
+    zIndex: 10,
   },
 
   leftInner: {
     width: '100%',
-    maxWidth: '380px',
+    maxWidth: '440px',
+    margin: '0 auto',
     display: 'flex',
     flexDirection: 'column',
-    gap: '32px',
+    gap: '48px',
+  },
+
+  header: {
+    marginBottom: 0,
   },
 
   logo: {
+    fontSize: '24px',
+    fontWeight: '700',
+    color: 'var(--auth-primary)',
+    letterSpacing: '-0.05em',
     display: 'flex',
     alignItems: 'center',
-    gap: '14px',
+    gap: '8px',
+    margin: '0 0 8px 0',
   },
 
   logoIcon: {
-    fontSize: '36px',
-    width: '52px',
-    height: '52px',
-    backgroundColor: '#f0f3ff',
-    borderRadius: '12px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
+    fontSize: '24px',
   },
 
-  logoTitle: {
-    fontSize: '20px',
-    fontWeight: '700',
-    color: '#1e1e2e',
-    margin: '0 0 2px 0',
-  },
-
-  logoSub: {
-    fontSize: '12px',
-    color: '#a0aec0',
+  subtitle: {
+    color: 'var(--auth-on-surface-variant)',
     margin: 0,
+    fontSize: '14px',
   },
 
   card: {
-    backgroundColor: '#fff',
-    borderRadius: '16px',
-    border: '1px solid #e2e8f0',
+    backgroundColor: 'var(--auth-panel-bg)',
+    border: '1px solid var(--auth-border)',
+    borderRadius: '8px',
     overflow: 'hidden',
-    boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
+    width: '100%',
   },
 
   tabs: {
     display: 'flex',
-    borderBottom: '1px solid #e2e8f0',
+    borderBottom: '1px solid var(--auth-border)',
   },
 
   tab: {
     flex: 1,
-    padding: '16px',
+    padding: '12px 0',
     border: 'none',
     cursor: 'pointer',
-    fontSize: '14px',
+    fontSize: '16px',
     fontWeight: '600',
+    background: 'transparent',
+    color: 'var(--auth-on-surface-variant)',
+    borderBottom: '2px solid transparent',
     transition: 'all 0.2s ease',
   },
 
   tabActive: {
-    backgroundColor: '#fff',
-    color: '#667eea',
-    borderBottom: '2px solid #667eea',
-  },
-
-  tabInactive: {
-    backgroundColor: '#f8fafc',
-    color: '#a0aec0',
-    borderBottom: '2px solid transparent',
+    color: 'var(--auth-primary)',
+    borderBottom: '2px solid var(--auth-primary)',
+    fontWeight: '700',
   },
 
   form: {
-    padding: '28px',
+    padding: '24px',
     display: 'flex',
     flexDirection: 'column',
     gap: '20px',
   },
 
-  formTitle: {
-    fontSize: '20px',
-    fontWeight: '700',
-    color: '#1e1e2e',
-    margin: '0 0 6px 0',
-  },
-
-  formSubtitle: {
-    fontSize: '13px',
-    color: '#718096',
-    margin: 0,
-  },
-
-  link: {
-    color: '#667eea',
-    fontWeight: '600',
-    cursor: 'pointer',
-    textDecoration: 'underline',
-  },
-
   field: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '8px',
+    gap: '6px',
   },
 
   label: {
-    fontSize: '13px',
+    color: 'var(--auth-on-surface-variant)',
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em',
+    fontSize: '11px',
     fontWeight: '600',
-    color: '#4a5568',
   },
 
-  inputBox: {
-    position: 'relative',
+  labelRow: {
     display: 'flex',
+    justifyContent: 'space-between',
     alignItems: 'center',
   },
 
-  icon: {
-    position: 'absolute',
-    left: '13px',
-    fontSize: '15px',
-    pointerEvents: 'none',
-    zIndex: 1,
+  forgotLink: {
+    color: 'var(--auth-primary)',
+    fontSize: '12px',
+    cursor: 'default',
+  },
+
+  fieldIcon: {
+    color: 'var(--auth-on-surface-variant)',
+    marginRight: '12px',
+    fontSize: '16px',
+    flexShrink: 0,
   },
 
   eyeBtn: {
-    position: 'absolute',
-    right: '13px',
     background: 'none',
     border: 'none',
     cursor: 'pointer',
-    fontSize: '15px',
-    padding: 0,
-    zIndex: 1,
+    color: 'var(--auth-on-surface-variant)',
+    fontSize: '16px',
+    padding: '4px',
+    marginLeft: '4px',
+    flexShrink: 0,
+  },
+
+  rememberRow: {
+    display: 'flex',
+    alignItems: 'center',
+    paddingTop: '4px',
+  },
+
+  rememberLabel: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    color: 'var(--auth-on-surface-variant)',
+    fontSize: '14px',
+    cursor: 'pointer',
+  },
+
+  checkbox: {
+    accentColor: 'var(--auth-primary)',
   },
 
   hints: {
@@ -454,9 +435,9 @@ const styles = {
     flexDirection: 'column',
     gap: '6px',
     padding: '12px 14px',
-    backgroundColor: '#f8fafc',
+    backgroundColor: 'var(--auth-bg)',
     borderRadius: '8px',
-    border: '1px solid #e2e8f0',
+    border: '1px solid var(--auth-border)',
   },
 
   hint: {
@@ -465,129 +446,127 @@ const styles = {
   },
 
   errorBox: {
-    backgroundColor: '#fff5f5',
-    border: '1px solid #feb2b2',
+    backgroundColor: 'rgba(var(--auth-error-container-rgb), 0.3)',
+    border: '1px solid var(--auth-error-container)',
     borderRadius: '8px',
     padding: '12px 16px',
     fontSize: '13px',
-    color: '#c53030',
+    color: 'var(--auth-error)',
   },
 
   footer: {
     textAlign: 'center',
+    color: 'var(--auth-on-surface-variant)',
     fontSize: '12px',
-    color: '#a0aec0',
   },
 
-  right: {
-    flex: 1,
-    background: 'linear-gradient(135deg, #1e1e2e 0%, #2d2d44 40%, #4a3d7a 100%)',
+  footerLink: {
+    color: 'var(--auth-primary)',
+    cursor: 'default',
+  },
+
+  rightPanel: {
+    flex: '0 0 50%',
     display: 'flex',
-    alignItems: 'center',
+    flexDirection: 'column',
     justifyContent: 'center',
-    padding: '60px 40px',
+    padding: '48px 64px',
+    borderLeft: '1px solid var(--auth-border)',
+    background: 'radial-gradient(circle at 80% 20%, rgba(var(--auth-primary-container-rgb), 0.15) 0%, rgba(var(--auth-bg-rgb), 1) 50%)',
   },
 
   rightInner: {
-    maxWidth: '480px',
-    color: '#fff',
-  },
-
-  rightBadge: {
-    display: 'inline-block',
-    backgroundColor: 'rgba(102,126,234,0.3)',
-    border: '1px solid rgba(102,126,234,0.6)',
-    color: '#a5b4fc',
-    fontSize: '11px',
-    fontWeight: '700',
-    letterSpacing: '1.5px',
-    padding: '5px 12px',
-    borderRadius: '20px',
-    marginBottom: '24px',
+    maxWidth: '520px',
   },
 
   rightTitle: {
-    fontSize: '36px',
+    fontSize: '40px',
     fontWeight: '700',
-    lineHeight: '1.25',
-    margin: '0 0 16px 0',
-    color: '#fff',
+    lineHeight: '1.2',
+    margin: '0 0 24px 0',
+    color: 'var(--auth-on-surface)',
+  },
+
+  rightAccent: {
+    color: 'var(--auth-primary)',
   },
 
   rightDesc: {
-    fontSize: '15px',
+    color: 'var(--auth-on-surface-variant)',
+    fontSize: '16px',
     lineHeight: '1.7',
-    color: 'rgba(255,255,255,0.65)',
     margin: '0 0 40px 0',
   },
 
-  featureCards: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '14px',
+  statsGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '16px',
     marginBottom: '40px',
   },
 
-  featureCard: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '16px',
-    backgroundColor: 'rgba(255,255,255,0.07)',
-    border: '1px solid rgba(255,255,255,0.1)',
-    borderRadius: '12px',
+  statCard: {
+    backgroundColor: 'var(--auth-panel-bg)',
+    border: '1px solid var(--auth-border)',
+    borderRadius: '8px',
     padding: '16px',
-    backdropFilter: 'blur(10px)',
-  },
-
-  featureCardIcon: {
-    fontSize: '24px',
-    width: '44px',
-    height: '44px',
-    backgroundColor: 'rgba(102,126,234,0.25)',
-    borderRadius: '10px',
     display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-
-  featureCardTitle: {
-    fontSize: '14px',
-    fontWeight: '600',
-    color: '#fff',
-    margin: '0 0 3px 0',
-  },
-
-  featureCardDesc: {
-    fontSize: '12px',
-    color: 'rgba(255,255,255,0.55)',
-    margin: 0,
-  },
-
-  stats: {
-    display: 'flex',
-    gap: '24px',
-    borderTop: '1px solid rgba(255,255,255,0.1)',
-    paddingTop: '32px',
-  },
-
-  stat: {
-    flex: 1,
-    textAlign: 'center',
-  },
-
-  statValue: {
-    fontSize: '24px',
-    fontWeight: '700',
-    color: '#a5b4fc',
-    margin: '0 0 4px 0',
+    flexDirection: 'column',
+    gap: '4px',
   },
 
   statLabel: {
-    fontSize: '11px',
-    color: 'rgba(255,255,255,0.5)',
-    margin: 0,
+    color: 'var(--auth-on-surface-variant)',
     textTransform: 'uppercase',
-    letterSpacing: '0.5px',
+    fontSize: '11px',
+    letterSpacing: '0.05em',
+  },
+
+  statValue: {
+    fontSize: '28px',
+    fontWeight: '700',
+    color: 'var(--auth-primary)',
+  },
+
+  featureList: {
+    listStyle: 'none',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '16px',
+    padding: 0,
+    margin: 0,
+  },
+
+  featureItem: {
+    display: 'flex',
+    gap: '16px',
+    alignItems: 'flex-start',
+  },
+
+  featureIconWrap: {
+    width: '40px',
+    height: '40px',
+    borderRadius: '50%',
+    backgroundColor: 'rgba(var(--auth-primary-container-rgb), 0.2)',
+    border: '1px solid rgba(var(--auth-primary-rgb), 0.3)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '18px',
+    flexShrink: 0,
+  },
+
+  featureTitle: {
+    fontWeight: '700',
+    color: 'var(--auth-on-surface)',
+    margin: '0 0 4px 0',
+    fontSize: '15px',
+  },
+
+  featureDesc: {
+    color: 'var(--auth-on-surface-variant)',
+    margin: 0,
+    fontSize: '13px',
+    lineHeight: '1.5',
   },
 };

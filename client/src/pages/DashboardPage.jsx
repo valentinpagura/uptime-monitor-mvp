@@ -1,239 +1,247 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, useContext } from 'react';
 import { AuthContext } from '../contexts/AuthContext';
-import { getSitios } from '../services/api';
-import { CreateSitioForm } from '../components/Forms/CreateSitioForm';
-import { Navbar } from '../components/Navbar';
+import { getSitios, getLogs, createSitio, deleteSitio } from '../services/api';
+import { Sidebar } from '../components/Sidebar';
+import { TopBar } from '../components/TopBar';
+import { KpiCard } from '../components/KpiCard';
+import { SitiosTable } from '../components/SitiosTable';
+import { AddSiteForm } from '../components/AddSiteForm';
 import { SitioDetailPage } from './SitioDetailPage';
 
 export function DashboardPage() {
-  const { user, token } = useContext(AuthContext);
+  const { user, token, logout } = useContext(AuthContext);
   const [sitios, setSitios] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const [sitioSeleccionado, setSitioSeleccionado] = useState(null);
+  const urlInputRef = useRef(null);
 
-  // Auto-refresh cada 10 segundos
-  useEffect(() => {
-    loadSitios();
-
-    const interval = setInterval(() => {
-      loadSitios();
-    }, 10000);
-
-    return () => clearInterval(interval);
-  }, [token]);
-
-  async function loadSitios() {
+  const loadSitios = useCallback(async () => {
     try {
+      setError(null);
       const data = await getSitios(token);
-      setSitios(data.sitios || []);
+      const sitiosList = data.sitios || [];
+
+      const logsResults = await Promise.allSettled(
+        sitiosList.map((s) => getLogs(s.id, token)),
+      );
+
+      const sitiosConEstado = sitiosList.map((sitio, i) => {
+        const result = logsResults[i];
+        const logs = result.status === 'fulfilled' ? result.value.logs : [];
+        return { ...sitio, ultimoLog: logs.length > 0 ? logs[0] : null };
+      });
+
+      setSitios(sitiosConEstado);
     } catch (err) {
       console.error('Error cargando sitios:', err);
+      setError('Error al cargar los sitios');
     } finally {
       setLoading(false);
     }
-  }
+  }, [token]);
 
-  async function handleDelete(sitioId) {
-    // Eliminar sitio
-    try {
-      await fetch(`http://localhost:5000/sitios/${sitioId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+  useEffect(() => {
+    let mounted = true;
+
+    loadSitios();
+
+    const interval = setInterval(() => {
+      if (mounted) loadSitios();
+    }, 10000);
+
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
+  }, [loadSitios]);
+
+  useEffect(() => {
+    const prevBg = document.body.style.backgroundColor;
+    const prevOverflow = document.body.style.overflow;
+    const prevClass = document.body.className;
+
+    document.body.style.backgroundColor = '#141218';
+    document.body.style.overflow = 'hidden';
+    document.body.classList.add('db-active');
+
+    return () => {
+      document.body.style.backgroundColor = prevBg;
+      document.body.style.overflow = prevOverflow;
+      document.body.className = prevClass;
+    };
+  }, []);
+
+  const handleRowClick = useCallback((sitioId) => {
+    setSitioSeleccionado(sitioId);
+  }, []);
+
+  const handleDelete = useCallback(
+    async (sitioId) => {
+      try {
+        await deleteSitio(sitioId, token);
+        loadSitios();
+      } catch (err) {
+        console.error('Error eliminando sitio:', err);
+      }
+    },
+    [token, loadSitios],
+  );
+
+  const handleRefresh = useCallback(() => {
+    loadSitios();
+  }, [loadSitios]);
+
+  const handleSearchChange = useCallback((e) => {
+    setSearchQuery(e.target.value);
+  }, []);
+
+  const handleAddSite = useCallback(
+    async (url, nombre, frecuencia) => {
+      await createSitio(url, nombre, frecuencia, token);
       loadSitios();
-    } catch (err) {
-      console.error('Error eliminando sitio:', err);
+    },
+    [token, loadSitios],
+  );
+
+  const handleAddProbe = useCallback(() => {
+    if (urlInputRef.current) {
+      urlInputRef.current.focus();
+      urlInputRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-  }
+  }, []);
 
-  // Si hay un sitio seleccionado, mostrar detalle
-  if (sitioSeleccionado) {
-    return (
-      <SitioDetailPage
-        sitioId={sitioSeleccionado}
-        onBack={() => setSitioSeleccionado(null)}
-      />
+  const filteredSitios = useMemo(() => {
+    if (!searchQuery) return sitios;
+
+    const q = searchQuery.toLowerCase();
+    return sitios.filter(
+      (s) => (s.nombre && s.nombre.toLowerCase().includes(q)) || s.url.toLowerCase().includes(q),
     );
+  }, [sitios, searchQuery]);
+
+  const kpis = useMemo(() => {
+    let passing = 0;
+    let warnings = 0;
+    let failed = 0;
+    let totalLatencia = 0;
+    let latenciaCount = 0;
+
+    for (let i = 0; i < sitios.length; i++) {
+      const log = sitios[i].ultimoLog;
+      if (!log) continue;
+
+      if (!log.is_online) {
+        failed++;
+      } else if (log.latencia_ms != null && log.latencia_ms > 400) {
+        warnings++;
+      } else {
+        passing++;
+      }
+
+      if (log.latencia_ms != null) {
+        totalLatencia += log.latencia_ms;
+        latenciaCount++;
+      }
+    }
+
+    return {
+      passing,
+      warnings,
+      failed,
+      avgLatencia: latenciaCount > 0 ? Math.round(totalLatencia / latenciaCount) : 0,
+    };
+  }, [sitios]);
+
+  if (sitioSeleccionado) {
+    return <SitioDetailPage sitioId={sitioSeleccionado} onBack={() => setSitioSeleccionado(null)} />;
   }
 
-  // Lista de sitios
   return (
-    <div style={styles.page}>
-      <Navbar />
-
-      <div style={styles.container}>
-        <h1 style={styles.title}>Dashboard de Monitoreo</h1>
-        <p style={styles.subtitle}>Bienvenido, {user?.email}</p>
-
-        {/* Formulario para agregar sitio */}
-        <div style={styles.formSection}>
-          <CreateSitioForm onSitioCreated={loadSitios} />
-        </div>
-
-        {/* Tabla de sitios */}
-        <div style={styles.tableSection}>
-          <h2 style={styles.sectionTitle}>
-            Sitios Monitoreados ({sitios.length})
-          </h2>
-
-          {loading ? (
-            <p style={styles.loading}>Cargando sitios...</p>
-          ) : sitios.length === 0 ? (
-            <p style={styles.empty}>
-              📭 No hay sitios. Ingresa una URL arriba para comenzar.
-            </p>
-          ) : (
-            <div style={styles.tableWrapper}>
-              <table style={styles.table}>
-                <thead>
-                  <tr style={styles.headerRow}>
-                    <th style={styles.th}>Sitio</th>
-                    <th style={styles.th}>URL</th>
-                    <th style={styles.th}>Frecuencia</th>
-                    <th style={styles.th}>Acción</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sitios.map((sitio) => (
-                    <tr
-                      key={sitio.id}
-                      style={styles.row}
-                      onClick={() => setSitioSeleccionado(sitio.id)}
-                    >
-                      <td style={styles.td}>
-                        <strong>{sitio.nombre || sitio.url}</strong>
-                      </td>
-                      <td style={styles.td}>{sitio.url}</td>
-                      <td style={styles.td}>{sitio.frecuencia_minutos} min</td>
-                      <td style={styles.td}>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (window.confirm('¿Eliminar sitio?')) {
-                              handleDelete(sitio.id);
-                            }
-                          }}
-                          style={styles.deleteBtn}
-                        >
-                          🗑️
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+    <div style={styles.layout}>
+      <Sidebar onAddProbe={handleAddProbe} onLogout={logout} />
+      <main style={styles.main}>
+        <TopBar searchValue={searchQuery} onSearchChange={handleSearchChange} onRefresh={handleRefresh} />
+        <div style={styles.content} className="db-content">
+          <div style={styles.headerRow}>
+            <div>
+              <h2 style={styles.pageTitle}>Dashboard</h2>
+              <p style={styles.pageSubtitle}>
+                Monitoring {sitios.length} active endpoint{sitios.length !== 1 ? 's' : ''} globally.
+              </p>
             </div>
-          )}
+          </div>
+
+          <div style={styles.kpiGrid}>
+            <KpiCard label="Passing Sites" value={kpis.passing.toLocaleString()} variant="primary" />
+            <KpiCard label="Warnings" value={kpis.warnings.toLocaleString()} variant="warning" />
+            <KpiCard label="Failed" value={kpis.failed.toLocaleString()} variant="error" />
+            <KpiCard label="Global Avg Latency" value={kpis.avgLatencia} unit="ms" variant="neutral" />
+          </div>
+
+          {error && <p style={styles.errorBanner}>{error}</p>}
+
+          <div className="db-dashboard-grid">
+            <AddSiteForm onSubmit={handleAddSite} inputRef={urlInputRef} />
+            <SitiosTable sitios={filteredSitios} onRowClick={handleRowClick} onDelete={handleDelete} />
+          </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
 
 const styles = {
-  page: {
-    backgroundColor: '#f9f9f9',
-    minHeight: '100vh',
+  layout: {
+    display: 'flex',
+    height: '100vh',
+    overflow: 'hidden',
   },
-
-  container: {
-    maxWidth: '1000px',
-    margin: '0 auto',
-    padding: '30px 20px',
+  main: {
+    marginLeft: '256px',
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    height: '100vh',
+    overflow: 'hidden',
+    backgroundColor: 'var(--db-bg-main)',
   },
-
-  title: {
-    fontSize: '28px',
-    color: '#1e1e2e',
-    margin: '0 0 8px 0',
-    fontWeight: 'bold',
+  content: {
+    flex: 1,
+    overflowY: 'auto',
+    padding: '24px',
   },
-
-  subtitle: {
-    fontSize: '14px',
-    color: '#666',
-    margin: '0 0 30px 0',
-  },
-
-  formSection: {
-    backgroundColor: '#fff',
-    border: '1px solid #e0e0e0',
-    borderRadius: '8px',
-    padding: '20px',
-    marginBottom: '30px',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.08)',
-  },
-
-  tableSection: {
-    backgroundColor: '#fff',
-    border: '1px solid #e0e0e0',
-    borderRadius: '8px',
-    padding: '20px',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.08)',
-  },
-
-  sectionTitle: {
-    margin: '0 0 16px 0',
-    fontSize: '18px',
-    color: '#1e1e2e',
-    fontWeight: '600',
-  },
-
-  loading: {
-    textAlign: 'center',
-    color: '#666',
-    padding: '20px 0',
-  },
-
-  empty: {
-    textAlign: 'center',
-    color: '#999',
-    padding: '20px 0',
-    fontStyle: 'italic',
-  },
-
-  tableWrapper: {
-    overflowX: 'auto',
-  },
-
-  table: {
-    width: '100%',
-    borderCollapse: 'collapse',
-  },
-
   headerRow: {
-    backgroundColor: '#f5f5f5',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    marginBottom: '24px',
   },
-
-  th: {
-    padding: '12px 16px',
-    textAlign: 'left',
-    fontSize: '12px',
-    fontWeight: '600',
-    color: '#666',
-    textTransform: 'uppercase',
-    borderBottom: '1px solid #e0e0e0',
+  pageTitle: {
+    fontSize: '30px',
+    fontWeight: 700,
+    color: 'var(--auth-on-surface)',
+    margin: '0 0 4px 0',
   },
-
-  row: {
-    borderBottom: '1px solid #e0e0e0',
-    cursor: 'pointer',
-    transition: 'background-color 0.2s',
-  },
-
-  td: {
-    padding: '12px 16px',
+  pageSubtitle: {
     fontSize: '14px',
-    color: '#1e1e2e',
+    color: 'var(--auth-on-surface-variant)',
+    margin: 0,
   },
-
-  deleteBtn: {
-    background: 'none',
-    border: 'none',
-    fontSize: '16px',
-    cursor: 'pointer',
-    padding: '4px 8px',
+  kpiGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+    gap: '16px',
+    marginBottom: '16px',
+  },
+  errorBanner: {
+    backgroundColor: 'rgba(255, 180, 171, 0.1)',
+    border: '1px solid var(--auth-error)',
+    color: 'var(--auth-error)',
+    padding: '12px 16px',
+    borderRadius: '8px',
+    fontSize: '14px',
+    marginBottom: '16px',
   },
 };

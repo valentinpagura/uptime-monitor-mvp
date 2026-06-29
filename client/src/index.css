@@ -62,3 +62,380 @@ input, button, textarea, select {
   cursor: not-allowed;
   transform: none;
 }
+
+:root {
+  --auth-bg: #0a0e17;
+  --auth-bg-rgb: 10, 14, 23;
+  --auth-panel-bg: #131825;
+  --auth-border: #232b3e;
+  --auth-primary: #cfbcff;
+  --auth-primary-rgb: 207, 188, 255;
+  --auth-primary-container: #6750a4;
+  --auth-primary-container-rgb: 103, 80, 164;
+  --auth-on-surface: #e6e0e9;
+  --auth-on-surface-variant: #cbc4d2;
+  --auth-error: #ffb4ab;
+  --auth-error-container: #93000a;
+  --auth-error-container-rgb: 147, 0, 10;
+}
+
+.auth-field-wrap {
+  display: flex;
+  align-items: center;
+  background-color: var(--auth-bg);
+  border: 1px solid var(--auth-border);
+  border-radius: 9999px;
+  padding: 4px 16px;
+  transition: border-color 0.2s ease;
+}
+
+.auth-field-wrap:focus-within {
+  border-color: var(--auth-primary);
+}
+
+.auth-field-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--auth-on-surface);
+  font-size: 14px;
+  padding: 10px 0;
+  outline: none;
+  min-width: 0;
+  font-family: inherit;
+}
+
+.auth-field-input::placeholder {
+  color: #6b7280;
+}
+
+.auth-submit-btn {
+  width: 100%;
+  padding: 14px 20px;
+  background: linear-gradient(135deg, var(--auth-primary) 0%, var(--auth-primary-container) 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 9999px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  margin-top: 8px;
+}
+
+.auth-submit-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.auth-submit-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ── Dashboard Theme ─────────────────────────────── */
+
+:root {
+  --db-bg-main: #0a0e17;
+  --db-bg-card: #131825;
+  --db-border-card: #232b3e;
+  --db-border-table: #1e2536;
+  --db-row-hover: #1a2133;
+  --db-surface: #141218;
+  --db-tertiary: #e7c365;
+  --db-surface-container-low: #1d1b20;
+  --db-surface-container-high: #2b292f;
+  --db-outline-variant: #494551;
+}
+
+/* ── Sidebar ── */
+
+.sidebar-nav-item {
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.sidebar-nav-item:hover:not(.sidebar-nav-item--inert):not(.sidebar-nav-item--active) {
+  background-color: var(--db-surface-container-high);
+  color: var(--auth-on-surface);
+}
+
+.sidebar-nav-item--inert {
+  cursor: default !important;
+  opacity: 0.5;
+}
+
+.sidebar-nav-item--active {
+  color: var(--auth-primary);
+  font-weight: 700;
+  border-right: 2px solid var(--auth-primary);
+  background-color: rgba(207, 188, 255, 0.1);
+}
+
+/* ── TopBar ── */
+
+.db-topbar-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--auth-on-surface-variant);
+  cursor: pointer;
+  transition: background-color 0.2s;
+  font-size: 18px;
+  font-family: inherit;
+}
+
+.db-topbar-btn:hover {
+  background-color: var(--db-surface-container-high);
+}
+
+.db-search-input {
+  background: transparent;
+  border: none;
+  color: var(--auth-on-surface);
+  outline: none;
+  width: 256px;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.db-search-input::placeholder {
+  color: rgba(203, 196, 210, 0.5);
+}
+
+/* ── Table ── */
+
+.db-table-row {
+  transition: background-color 0.2s;
+  border-bottom: 1px solid var(--db-border-table);
+}
+
+.db-table-row:hover {
+  background-color: var(--db-row-hover);
+}
+
+.db-row-menu-btn {
+  opacity: 0;
+  transition: opacity 0.2s;
+  border: none;
+  background: transparent;
+  color: var(--auth-on-surface-variant);
+  cursor: pointer;
+  font-size: 18px;
+  padding: 4px;
+  line-height: 1;
+  font-family: inherit;
+}
+
+.db-table-row:hover .db-row-menu-btn {
+  opacity: 1;
+}
+
+.db-row-menu-btn:hover {
+  color: var(--auth-on-surface);
+}
+
+/* ── Context Menu ── */
+
+.db-context-menu {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  background-color: var(--db-surface-container-low);
+  border: 1px solid var(--db-outline-variant);
+  border-radius: 8px;
+  padding: 4px 0;
+  min-width: 140px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  z-index: 100;
+}
+
+.db-context-menu-item {
+  display: block;
+  width: 100%;
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  color: var(--auth-on-surface-variant);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.db-context-menu-item:hover {
+  background-color: var(--db-surface-container-high);
+  color: var(--auth-error);
+}
+
+/* ── Dashboard Form Elements ── */
+
+.db-input {
+  width: 100%;
+  background-color: var(--db-bg-main);
+  border: 1px solid var(--db-border-card);
+  border-radius: 9999px;
+  padding: 8px 16px;
+  color: var(--auth-on-surface);
+  font-family: inherit;
+  font-size: 14px;
+  outline: none;
+  height: 40px;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.db-input:focus {
+  border-color: var(--auth-primary);
+}
+
+.db-input::placeholder {
+  color: rgba(203, 196, 210, 0.5);
+}
+
+.db-input-mono {
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.db-select {
+  width: 100%;
+  background-color: var(--db-bg-main);
+  border: 1px solid var(--db-border-card);
+  border-radius: 9999px;
+  padding: 8px 16px;
+  color: var(--auth-on-surface);
+  font-family: inherit;
+  font-size: 14px;
+  outline: none;
+  height: 40px;
+  box-sizing: border-box;
+  appearance: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23cbc4d2' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+
+.db-select:focus {
+  border-color: var(--auth-primary);
+}
+
+.db-submit-btn {
+  width: 100%;
+  height: 40px;
+  border-radius: 9999px;
+  border: none;
+  background: linear-gradient(135deg, var(--auth-primary) 0%, var(--auth-primary-container) 100%);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  font-family: inherit;
+}
+
+.db-submit-btn:hover {
+  opacity: 0.9;
+}
+
+.db-submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── Responsive Layout ── */
+
+.db-cell-desktop {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .db-cell-desktop {
+    display: table-cell;
+  }
+}
+
+.db-cell-tablet {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .db-cell-tablet {
+    display: table-cell;
+  }
+}
+
+.db-dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+@media (min-width: 1024px) {
+  .db-dashboard-grid {
+    grid-template-columns: 1fr 2fr;
+  }
+}
+
+.db-grid-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* ── KPI Card ── */
+
+.db-kpi-card {
+  transition: border-color 0.2s;
+}
+
+/* ── Dashboard Content Scrollbar ── */
+
+.db-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.db-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.db-content::-webkit-scrollbar-thumb {
+  background-color: var(--db-outline-variant);
+  border-radius: 3px;
+}
+
+/* ── Welcome Page ── */
+
+.welcome-card {
+  transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.welcome-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(207, 188, 255, 0.25);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.welcome-btn-primary {
+  transition: all 0.3s ease !important;
+}
+
+.welcome-btn-primary:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 24px rgba(207, 188, 255, 0.35) !important;
+}
+
+.welcome-btn-secondary {
+  transition: all 0.3s ease !important;
+}
+
+.welcome-btn-secondary:hover {
+  transform: translateY(-2px) !important;
+  border-color: rgba(207, 188, 255, 0.7) !important;
+}
