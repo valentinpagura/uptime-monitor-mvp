@@ -113,7 +113,7 @@ const SitioTableRow = memo(function SitioTableRow({ sitio, onRowClick, onDelete 
 
 export function SitiosTable({ sitios, onRowClick, onDelete }) {
   return (
-    <div style={styles.card} className="db-grid-card">
+    <div style={styles.card} className="db-grid-card magic-glow-card">
       <div style={styles.cardHeader}>
         <h3 style={styles.cardTitle}>Active Monitors</h3>
         <button style={{ ...styles.viewAllBtn, opacity: 0.5, cursor: 'default', color: 'var(--auth-primary)' }}>

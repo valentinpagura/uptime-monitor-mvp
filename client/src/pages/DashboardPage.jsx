@@ -7,6 +7,7 @@ import { KpiCard } from '../components/KpiCard';
 import { SitiosTable } from '../components/SitiosTable';
 import { AddSiteForm } from '../components/AddSiteForm';
 import { SitioDetailPage } from './SitioDetailPage';
+import { useSpotlight } from '../hooks/useSpotlight';
 
 export function DashboardPage() {
   const { user, token, logout } = useContext(AuthContext);
@@ -16,6 +17,9 @@ export function DashboardPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [sitioSeleccionado, setSitioSeleccionado] = useState(null);
   const urlInputRef = useRef(null);
+  const contentRef = useRef(null);
+
+  useSpotlight(contentRef);
 
   const loadSitios = useCallback(async () => {
     try {
@@ -163,7 +167,7 @@ export function DashboardPage() {
       <Sidebar onAddProbe={handleAddProbe} onLogout={logout} />
       <main style={styles.main}>
         <TopBar searchValue={searchQuery} onSearchChange={handleSearchChange} onRefresh={handleRefresh} />
-        <div style={styles.content} className="db-content">
+        <div ref={contentRef} style={styles.content} className="db-content">
           <div style={styles.headerRow}>
             <div>
               <h2 style={styles.pageTitle}>Dashboard</h2>

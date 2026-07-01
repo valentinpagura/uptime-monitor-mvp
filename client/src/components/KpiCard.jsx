@@ -1,4 +1,5 @@
-import { memo } from 'react';
+import { memo, useRef } from 'react';
+import { useMagicEffects } from '../hooks/useMagicEffects';
 
 const DOT_COLORS = {
   primary: { border: 'rgba(207, 188, 255, 0.3)', dot: 'var(--auth-primary)' },
@@ -7,10 +8,13 @@ const DOT_COLORS = {
 };
 
 export const KpiCard = memo(function KpiCard({ label, value, unit, variant = 'neutral' }) {
+  const cardRef = useRef(null);
   const dotStyle = DOT_COLORS[variant];
 
+  useMagicEffects(cardRef);
+
   return (
-    <div style={{ ...styles.card, ...styles.cardBase }} className="db-kpi-card">
+    <div ref={cardRef} style={{ ...styles.card, ...styles.cardBase }} className="db-kpi-card magic-glow-card">
       {variant !== 'neutral' && dotStyle && (
         <div style={{ ...styles.dotOuter, borderColor: dotStyle.border }}>
           <div style={{ ...styles.dotInner, backgroundColor: dotStyle.dot }} />

@@ -410,6 +410,50 @@ input, button, textarea, select {
   border-radius: 3px;
 }
 
+/* ── Magic Effects (from MagicBento) ── */
+
+.magic-glow-card {
+  position: relative;
+  --glow-x: 50%;
+  --glow-y: 50%;
+  --glow-intensity: 0;
+  --glow-radius: 200px;
+}
+
+.magic-glow-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 2px;
+  background: radial-gradient(
+    var(--glow-radius) circle at var(--glow-x) var(--glow-y),
+    rgba(207, 188, 255, calc(var(--glow-intensity) * 0.8)) 0%,
+    rgba(207, 188, 255, calc(var(--glow-intensity) * 0.4)) 30%,
+    transparent 60%
+  );
+  border-radius: inherit;
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.particle {
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.global-spotlight {
+  will-change: transform, opacity;
+  pointer-events: none;
+}
+
 /* ── Welcome Page ── */
 
 .welcome-card {

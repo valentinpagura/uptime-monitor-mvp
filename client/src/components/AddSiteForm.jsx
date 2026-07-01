@@ -24,7 +24,7 @@ export function AddSiteForm({ onSubmit, inputRef }) {
   }
 
   return (
-    <div style={styles.card} className="db-grid-card">
+    <div style={styles.card} className="db-grid-card magic-glow-card">
       <h3 style={styles.cardTitle}>Add New Site</h3>
       <form onSubmit={handleSubmit} style={styles.form}>
         <div>
