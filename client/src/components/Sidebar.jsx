@@ -23,7 +23,7 @@ export function Sidebar({ onAddProbe, onLogout }) {
   }, [onLogout]);
 
   return (
-    <nav style={styles.nav}>
+    <nav style={styles.nav} className="db-sidebar">
       <div style={styles.logoSection}>
         <div style={styles.logoIcon}>
           <span style={styles.logoEmoji}>{'\uD83D\uDCBB'}</span>
@@ -34,7 +34,7 @@ export function Sidebar({ onAddProbe, onLogout }) {
         </div>
       </div>
 
-      <button onClick={handleAddProbe} style={styles.addBtn}>
+      <button onClick={handleAddProbe} style={styles.addBtn} className="db-add-probe-btn">
         <span style={styles.addBtnIcon}>{'\u2795'}</span>
         Deploy Probe
       </button>

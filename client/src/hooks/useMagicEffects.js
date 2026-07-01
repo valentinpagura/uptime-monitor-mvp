@@ -91,7 +91,7 @@ export function useMagicEffects(ref, options = {}) {
       s.isHovered = true;
       animateParticles();
       if (enableTilt) {
-        gsap.to(el, { rotateX: 5, rotateY: 5, duration: 0.3, ease: 'power2.out', transformPerspective: 1000 });
+        gsap.to(el, { rotateX: 3, rotateY: 3, duration: 0.3, ease: 'power2.out', transformPerspective: 1000 });
       }
     }
 
@@ -111,8 +111,8 @@ export function useMagicEffects(ref, options = {}) {
       const cy = rect.height / 2;
       if (enableTilt) {
         gsap.to(el, {
-          rotateX: ((y - cy) / cy) * -10,
-          rotateY: ((x - cx) / cx) * 10,
+          rotateX: ((y - cy) / cy) * -6,
+          rotateY: ((x - cx) / cx) * 6,
           duration: 0.1,
           ease: 'power2.out',
           transformPerspective: 1000,

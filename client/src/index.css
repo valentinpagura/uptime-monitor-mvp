@@ -155,9 +155,19 @@ input, button, textarea, select {
   transition: background-color 0.2s, color 0.2s;
 }
 
-.sidebar-nav-item:hover:not(.sidebar-nav-item--inert):not(.sidebar-nav-item--active) {
-  background-color: var(--db-surface-container-high);
-  color: var(--auth-on-surface);
+@media (hover: hover) {
+  .sidebar-nav-item:hover:not(.sidebar-nav-item--inert):not(.sidebar-nav-item--active) {
+    background-color: var(--db-surface-container-high);
+    color: var(--auth-on-surface);
+    box-shadow: inset 0 0 0 1px rgba(207, 188, 255, 0.08);
+  }
+}
+
+@media (hover: none) {
+  .sidebar-nav-item:hover:not(.sidebar-nav-item--inert):not(.sidebar-nav-item--active) {
+    background-color: var(--db-surface-container-high);
+    color: var(--auth-on-surface);
+  }
 }
 
 .sidebar-nav-item--inert {
@@ -215,6 +225,11 @@ input, button, textarea, select {
   border-bottom: 1px solid var(--db-border-table);
 }
 
+.db-table-row:active {
+  background-color: rgba(207, 188, 255, 0.06);
+  transition: background-color 0s;
+}
+
 .db-table-row:hover {
   background-color: var(--db-row-hover);
 }
@@ -253,6 +268,34 @@ input, button, textarea, select {
   min-width: 140px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
   z-index: 100;
+  animation: db-menu-enter 0.12s ease-out;
+  transform-origin: top right;
+}
+
+@keyframes db-menu-enter {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .db-context-menu {
+    animation: none;
+  }
+
+  .db-table-row:active {
+    background-color: transparent;
+  }
+
+  .db-kpi-card,
+  .db-table-row,
+  .sidebar-nav-item,
+  .db-add-probe-btn {
+    transition: none !important;
+  }
+
+  .db-add-probe-btn:hover {
+    transform: none !important;
+  }
 }
 
 .db-context-menu-item {
@@ -395,6 +438,30 @@ input, button, textarea, select {
   transition: border-color 0.2s;
 }
 
+@media (hover: hover) {
+  .db-kpi-card:hover {
+    border-color: var(--db-outline-variant);
+  }
+}
+
+/* ── Deploy Probe Button ── */
+
+.db-add-probe-btn {
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+@media (hover: hover) {
+  .db-add-probe-btn:hover {
+    opacity: 0.85;
+    transform: translateY(-1px);
+  }
+
+  .db-add-probe-btn:active {
+    transform: translateY(0);
+    opacity: 0.7;
+  }
+}
+
 /* ── Dashboard Content Scrollbar ── */
 
 .db-content::-webkit-scrollbar {
@@ -482,4 +549,57 @@ input, button, textarea, select {
 .welcome-btn-secondary:hover {
   transform: translateY(-2px) !important;
   border-color: rgba(207, 188, 255, 0.7) !important;
+}
+
+/* ── Skeleton Loading ── */
+
+@keyframes db-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.db-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--db-bg-card) 25%,
+    var(--db-row-hover) 50%,
+    var(--db-bg-card) 75%
+  );
+  background-size: 200% 100%;
+  animation: db-shimmer 1.5s ease-in-out infinite;
+}
+
+/* ── Page Transitions ── */
+
+.db-page-enter {
+  animation: db-fade-in 0.15s ease-out;
+}
+
+@keyframes db-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ── Unified Dashboard Scrollbar ── */
+
+.db-sidebar::-webkit-scrollbar,
+.db-content::-webkit-scrollbar,
+.db-table-wrapper::-webkit-scrollbar,
+.db-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.db-sidebar::-webkit-scrollbar-track,
+.db-content::-webkit-scrollbar-track,
+.db-table-wrapper::-webkit-scrollbar-track,
+.db-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.db-sidebar::-webkit-scrollbar-thumb,
+.db-content::-webkit-scrollbar-thumb,
+.db-table-wrapper::-webkit-scrollbar-thumb,
+.db-scroll::-webkit-scrollbar-thumb {
+  background-color: var(--db-outline-variant);
+  border-radius: 3px;
 }

@@ -7,7 +7,10 @@ import { KpiCard } from '../components/KpiCard';
 import { SitiosTable } from '../components/SitiosTable';
 import { AddSiteForm } from '../components/AddSiteForm';
 import { SitioDetailPage } from './SitioDetailPage';
+import Particles from '../components/Particles';
 import { useSpotlight } from '../hooks/useSpotlight';
+import { useStaggerReveal } from '../hooks/useStaggerReveal';
+import { useDebounce } from '../hooks/useDebounce';
 
 export function DashboardPage() {
   const { user, token, logout } = useContext(AuthContext);
@@ -15,11 +18,14 @@ export function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 250);
   const [sitioSeleccionado, setSitioSeleccionado] = useState(null);
   const urlInputRef = useRef(null);
   const contentRef = useRef(null);
+  const kpiGridRef = useRef(null);
 
   useSpotlight(contentRef);
+  useStaggerReveal(kpiGridRef);
 
   const loadSitios = useCallback(async () => {
     try {
@@ -117,13 +123,13 @@ export function DashboardPage() {
   }, []);
 
   const filteredSitios = useMemo(() => {
-    if (!searchQuery) return sitios;
+    if (!debouncedSearch) return sitios;
 
-    const q = searchQuery.toLowerCase();
+    const q = debouncedSearch.toLowerCase();
     return sitios.filter(
       (s) => (s.nombre && s.nombre.toLowerCase().includes(q)) || s.url.toLowerCase().includes(q),
     );
-  }, [sitios, searchQuery]);
+  }, [sitios, debouncedSearch]);
 
   const kpis = useMemo(() => {
     let passing = 0;
@@ -166,18 +172,29 @@ export function DashboardPage() {
     <div style={styles.layout}>
       <Sidebar onAddProbe={handleAddProbe} onLogout={logout} />
       <main style={styles.main}>
+        <div style={styles.particlesWrap}>
+          <Particles
+            particleCount={100}
+            particleSpread={5}
+            speed={0.05}
+            particleColors={['#cfbcff', '#6750a4']}
+            alphaParticles={true}
+            particleBaseSize={80}
+            sizeRandomness={0.5}
+            cameraDistance={15}
+            disableRotation={false}
+            pixelRatio={1}
+          />
+        </div>
         <TopBar searchValue={searchQuery} onSearchChange={handleSearchChange} onRefresh={handleRefresh} />
         <div ref={contentRef} style={styles.content} className="db-content">
           <div style={styles.headerRow}>
-            <div>
-              <h2 style={styles.pageTitle}>Dashboard</h2>
-              <p style={styles.pageSubtitle}>
-                Monitoring {sitios.length} active endpoint{sitios.length !== 1 ? 's' : ''} globally.
-              </p>
-            </div>
+            <p style={styles.pageSubtitle}>
+              Monitoring {sitios.length} active endpoint{sitios.length !== 1 ? 's' : ''} globally.
+            </p>
           </div>
 
-          <div style={styles.kpiGrid}>
+          <div ref={kpiGridRef} style={styles.kpiGrid}>
             <KpiCard label="Passing Sites" value={kpis.passing.toLocaleString()} variant="primary" />
             <KpiCard label="Warnings" value={kpis.warnings.toLocaleString()} variant="warning" />
             <KpiCard label="Failed" value={kpis.failed.toLocaleString()} variant="error" />
@@ -210,23 +227,17 @@ const styles = {
     height: '100vh',
     overflow: 'hidden',
     backgroundColor: 'var(--db-bg-main)',
+    position: 'relative',
   },
   content: {
     flex: 1,
     overflowY: 'auto',
     padding: '24px',
+    position: 'relative',
+    zIndex: 1,
   },
   headerRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
     marginBottom: '24px',
-  },
-  pageTitle: {
-    fontSize: '30px',
-    fontWeight: 700,
-    color: 'var(--auth-on-surface)',
-    margin: '0 0 4px 0',
   },
   pageSubtitle: {
     fontSize: '14px',
@@ -238,6 +249,16 @@ const styles = {
     gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
     gap: '16px',
     marginBottom: '16px',
+  },
+  particlesWrap: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 0,
+    overflow: 'hidden',
+    pointerEvents: 'none',
   },
   errorBanner: {
     backgroundColor: 'rgba(255, 180, 171, 0.1)',

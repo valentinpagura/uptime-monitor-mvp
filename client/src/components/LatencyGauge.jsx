@@ -1,38 +1,34 @@
 export function LatencyGauge({ latencia, max = 500 }) {
-  // Calcular el ángulo de la aguja (0-180 grados)
-  const angle = (latencia / max) * 180;
+  const safeLatencia = latencia ?? 0;
+  const angle = (safeLatencia / max) * 180;
+  const clampedAngle = Math.min(angle, 180);
 
-  // Determinar color según latencia
   let color;
-  if (latencia < 200) color = '#28a745'; // Verde
-  else if (latencia < 400) color = '#ffc107'; // Naranja
-  else color = '#dc3545'; // Rojo
+  if (safeLatencia < 200) color = '#4ade80';
+  else if (safeLatencia < 400) color = '#e7c365';
+  else color = '#ff6b6b';
+
+  const arcEndX = 20 + 160 * (safeLatencia / max);
+  const arcEndY = 100 - 80 * Math.sin((safeLatencia / max) * Math.PI);
 
   return (
-    <div style={styles.container}>
+    <div style={styles.container} className="magic-glow-card">
       <svg viewBox="0 0 200 120" style={styles.svg}>
-        {/* Arco de fondo */}
         <path
           d="M 20 100 A 80 80 0 0 1 180 100"
-          stroke="#e0e0e0"
+          stroke="var(--db-surface-container-high)"
           strokeWidth="10"
           fill="none"
           strokeLinecap="round"
         />
-
-        {/* Arco de progreso (coloreado) */}
         <path
-          d={`M 20 100 A 80 80 0 0 1 ${20 + 160 * (latencia / max)} ${
-            100 - 80 * Math.sin((latencia / max) * Math.PI)
-          }`}
+          d={`M 20 100 A 80 80 0 0 1 ${arcEndX} ${arcEndY}`}
           stroke={color}
           strokeWidth="10"
           fill="none"
           strokeLinecap="round"
         />
-
-        {/* Aguja */}
-        <g transform={`rotate(${angle} 100 100)`}>
+        <g transform={`rotate(${clampedAngle} 100 100)`}>
           <line
             x1="100"
             y1="100"
@@ -43,25 +39,21 @@ export function LatencyGauge({ latencia, max = 500 }) {
           />
           <circle cx="100" cy="100" r="4" fill={color} />
         </g>
-
-        {/* Etiquetas (0, 250, 500) */}
-        <text x="20" y="115" fontSize="12" textAnchor="middle" fill="#666">
+        <text x="20" y="115" fontSize="12" textAnchor="middle" fill="var(--auth-on-surface-variant)">
           0
         </text>
-        <text x="100" y="115" fontSize="12" textAnchor="middle" fill="#666">
-          {max / 2}
+        <text x="100" y="115" fontSize="12" textAnchor="middle" fill="var(--auth-on-surface-variant)">
+          {Math.round(max / 2)}
         </text>
-        <text x="180" y="115" fontSize="12" textAnchor="middle" fill="#666">
+        <text x="180" y="115" fontSize="12" textAnchor="middle" fill="var(--auth-on-surface-variant)">
           {max}
         </text>
       </svg>
-
-      {/* Valor central */}
       <div style={styles.valueBox}>
         <span style={{ ...styles.latenciaValue, color }}>
-          {latencia}
+          {latencia != null ? safeLatencia : '—'}
         </span>
-        <span style={styles.latenciaUnit}>ms</span>
+        <span style={styles.latenciaUnit}>{latencia != null ? 'ms' : ''}</span>
       </div>
     </div>
   );
@@ -73,18 +65,16 @@ const styles = {
     width: '100%',
     maxWidth: '300px',
     margin: '0 auto',
-    backgroundColor: '#fff',
-    border: '1px solid #e0e0e0',
+    backgroundColor: 'var(--db-bg-card)',
+    border: '1px solid var(--db-border-card)',
     borderRadius: '8px',
     padding: '20px',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.08)',
+    overflow: 'hidden',
   },
-
   svg: {
     width: '100%',
     height: 'auto',
   },
-
   valueBox: {
     position: 'absolute',
     top: '50%',
@@ -93,17 +83,15 @@ const styles = {
     textAlign: 'center',
     zIndex: 10,
   },
-
   latenciaValue: {
     display: 'block',
     fontSize: '32px',
     fontWeight: 'bold',
   },
-
   latenciaUnit: {
     display: 'block',
     fontSize: '12px',
-    color: '#999',
+    color: 'var(--auth-on-surface-variant)',
     fontWeight: '500',
   },
 };

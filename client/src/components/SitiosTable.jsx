@@ -116,12 +116,12 @@ export function SitiosTable({ sitios, onRowClick, onDelete }) {
     <div style={styles.card} className="db-grid-card magic-glow-card">
       <div style={styles.cardHeader}>
         <h3 style={styles.cardTitle}>Active Monitors</h3>
-        <button style={{ ...styles.viewAllBtn, opacity: 0.5, cursor: 'default', color: 'var(--auth-primary)' }}>
+        <button style={{ ...styles.viewAllBtn, opacity: 0.2, cursor: 'default', color: 'var(--auth-on-surface-variant)' }}>
           View All
         </button>
       </div>
 
-      <div style={styles.tableWrapper}>
+      <div style={styles.tableWrapper} className="db-table-wrapper">
         <table style={styles.table}>
           <thead>
             <tr style={styles.headerRow}>
