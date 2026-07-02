@@ -1,15 +1,19 @@
-export function LatencyGauge({ latencia, max = 500 }) {
+import { memo } from 'react';
+
+export const LatencyGauge = memo(function LatencyGauge({ latencia, max = 500 }) {
+  const hasData = latencia != null;
   const safeLatencia = latencia ?? 0;
-  const angle = (safeLatencia / max) * 180;
-  const clampedAngle = Math.min(angle, 180);
+  const clampedRatio = Math.min(safeLatencia / max, 1);
+  const angle = clampedRatio * 180;
 
   let color;
-  if (safeLatencia < 200) color = '#4ade80';
+  if (!hasData) color = 'var(--db-outline-variant)';
+  else if (safeLatencia < 200) color = '#4ade80';
   else if (safeLatencia < 400) color = '#e7c365';
   else color = '#ff6b6b';
 
-  const arcEndX = 20 + 160 * (safeLatencia / max);
-  const arcEndY = 100 - 80 * Math.sin((safeLatencia / max) * Math.PI);
+  const arcEndX = 20 + 160 * (hasData ? clampedRatio : 0);
+  const arcEndY = 100 - 80 * Math.sin((hasData ? clampedRatio : 0) * Math.PI);
 
   return (
     <div style={styles.container} className="magic-glow-card">
@@ -28,7 +32,7 @@ export function LatencyGauge({ latencia, max = 500 }) {
           fill="none"
           strokeLinecap="round"
         />
-        <g transform={`rotate(${clampedAngle} 100 100)`}>
+        <g transform={`rotate(${angle} 100 100)`}>
           <line
             x1="100"
             y1="100"
@@ -57,7 +61,7 @@ export function LatencyGauge({ latencia, max = 500 }) {
       </div>
     </div>
   );
-}
+});
 
 const styles = {
   container: {

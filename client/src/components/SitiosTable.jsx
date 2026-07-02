@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, memo, useRef } from 'react';
+import { getStatus } from '../utils/status';
 
 const SitioTableRow = memo(function SitioTableRow({ sitio, onRowClick, onDelete }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -38,29 +39,7 @@ const SitioTableRow = memo(function SitioTableRow({ sitio, onRowClick, onDelete 
     [sitio, onDelete],
   );
 
-  const statusColor =
-    !log
-      ? 'var(--db-outline-variant)'
-      : !log.is_online
-        ? 'var(--auth-error)'
-        : log.latencia_ms != null && log.latencia_ms > 400
-          ? 'var(--db-tertiary)'
-          : 'var(--auth-primary)';
-
-  const statusDotColor =
-    !log
-      ? 'var(--db-outline-variant)'
-      : !log.is_online
-        ? 'var(--auth-error)'
-        : log.latencia_ms != null && log.latencia_ms > 400
-          ? 'var(--db-tertiary)'
-          : 'var(--auth-primary)';
-
-  const statusLabel =
-    !log ? 'PENDING' : !log.is_online ? 'DOWN' : log.latencia_ms != null && log.latencia_ms > 400 ? 'WARN' : 'UP';
-
-  const nameColor = statusColor;
-
+  const status = getStatus(log);
   const latencyLabel =
     !log
       ? '\u2014'
@@ -70,7 +49,7 @@ const SitioTableRow = memo(function SitioTableRow({ sitio, onRowClick, onDelete 
           ? `${log.latencia_ms}ms`
           : '\u2014';
 
-  const latencyColor = statusColor;
+  const latencyColor = status.color;
 
   const freqLabel = sitio.frecuencia_minutos != null ? `${sitio.frecuencia_minutos}m` : '\u2014';
 
@@ -78,11 +57,11 @@ const SitioTableRow = memo(function SitioTableRow({ sitio, onRowClick, onDelete 
     <tr className="db-table-row" onClick={handleRowClick} style={styles.row}>
       <td style={styles.td}>
         <div style={styles.statusCell}>
-          <div style={{ ...styles.statusDot, backgroundColor: statusDotColor }} />
-          <span style={{ color: statusColor }}>{statusLabel}</span>
+          <div style={{ ...styles.statusDot, backgroundColor: status.dotColor }} />
+          <span style={{ color: status.color }}>{status.label}</span>
         </div>
       </td>
-      <td style={{ ...styles.td, color: nameColor, fontWeight: 500 }}>{sitio.nombre || sitio.url}</td>
+      <td style={{ ...styles.td, color: status.color, fontWeight: 500 }}>{sitio.nombre || sitio.url}</td>
       <td
         style={{ ...styles.td, ...styles.tdMono, color: 'var(--auth-on-surface-variant)' }}
         className="db-cell-tablet"

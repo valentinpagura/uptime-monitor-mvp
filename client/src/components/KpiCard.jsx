@@ -25,11 +25,11 @@ export const KpiCard = memo(function KpiCard({ label, value, unit, variant = 'ne
 
       {variant === 'neutral' ? (
         <div style={styles.valueRow}>
-          <span style={styles.value}>{value}</span>
-          {unit && <span style={styles.unit}>{unit}</span>}
+          <span style={styles.value}>{value != null ? value : '\u2014'}</span>
+          {unit && value != null && <span style={styles.unit}>{unit}</span>}
         </div>
       ) : (
-        <span style={styles.value}>{value}</span>
+        <span style={styles.value}>{value != null ? value : '\u2014'}</span>
       )}
     </div>
   );

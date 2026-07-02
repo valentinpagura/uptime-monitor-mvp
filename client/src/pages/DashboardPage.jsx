@@ -11,6 +11,7 @@ import Particles from '../components/Particles';
 import { useSpotlight } from '../hooks/useSpotlight';
 import { useStaggerReveal } from '../hooks/useStaggerReveal';
 import { useDebounce } from '../hooks/useDebounce';
+import { useDashboardMetrics } from '../hooks/useDashboardMetrics';
 
 export function DashboardPage() {
   const { user, token, logout } = useContext(AuthContext);
@@ -131,38 +132,7 @@ export function DashboardPage() {
     );
   }, [sitios, debouncedSearch]);
 
-  const kpis = useMemo(() => {
-    let passing = 0;
-    let warnings = 0;
-    let failed = 0;
-    let totalLatencia = 0;
-    let latenciaCount = 0;
-
-    for (let i = 0; i < sitios.length; i++) {
-      const log = sitios[i].ultimoLog;
-      if (!log) continue;
-
-      if (!log.is_online) {
-        failed++;
-      } else if (log.latencia_ms != null && log.latencia_ms > 400) {
-        warnings++;
-      } else {
-        passing++;
-      }
-
-      if (log.latencia_ms != null) {
-        totalLatencia += log.latencia_ms;
-        latenciaCount++;
-      }
-    }
-
-    return {
-      passing,
-      warnings,
-      failed,
-      avgLatencia: latenciaCount > 0 ? Math.round(totalLatencia / latenciaCount) : 0,
-    };
-  }, [sitios]);
+  const { kpis } = useDashboardMetrics(sitios);
 
   if (sitioSeleccionado) {
     return <SitioDetailPage sitioId={sitioSeleccionado} onBack={() => setSitioSeleccionado(null)} />;

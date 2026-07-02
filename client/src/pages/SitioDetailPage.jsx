@@ -1,10 +1,14 @@
-import { useState, useEffect, useContext, useRef } from 'react';
+import { useState, useEffect, useContext, useRef, lazy, Suspense } from 'react';
 import { AuthContext } from '../contexts/AuthContext';
 import { getSitioStats } from '../services/api';
 import { StatCard } from '../components/StatCard';
 import { LatencyGauge } from '../components/LatencyGauge';
-import { LatencyChart } from '../components/LatencyChart';
+import { getStatus } from '../utils/status';
 import { gsap } from 'gsap';
+
+const LatencyChart = lazy(() =>
+  import('../components/LatencyChart').then((m) => ({ default: m.LatencyChart }))
+);
 
 function SkeletonBlocks() {
   return (
@@ -80,6 +84,7 @@ export function SitioDetailPage({ sitioId, onBack }) {
   useEffect(() => {
     const node = pageRef.current;
     let mounted = true;
+    let isFirstLoad = true;
 
     async function cargarStats() {
       try {
@@ -92,13 +97,21 @@ export function SitioDetailPage({ sitioId, onBack }) {
         if (!mounted) return;
         setError('Error cargando estadísticas');
       } finally {
-        if (mounted) setCargando(false);
+        if (mounted && isFirstLoad) {
+          setCargando(false);
+          isFirstLoad = false;
+        }
       }
     }
 
     cargarStats();
+    const interval = setInterval(() => {
+      if (mounted) cargarStats();
+    }, 10000);
+
     return () => {
       mounted = false;
+      clearInterval(interval);
       gsap.killTweensOf(node);
     };
   }, [sitioId, token]);
@@ -141,7 +154,7 @@ export function SitioDetailPage({ sitioId, onBack }) {
   const sitioNombre = stats.sitio?.nombre || stats.sitio?.url || 'Sitio';
   const sitioUrl = stats.sitio?.url || '';
   const ultimoLog = stats.ultimoLog;
-  const isOnline = ultimoLog?.is_online ?? false;
+  const status = getStatus(ultimoLog);
 
   return (
     <div ref={pageRef} style={styles.container}>
@@ -154,27 +167,33 @@ export function SitioDetailPage({ sitioId, onBack }) {
           <p style={styles.url}>{sitioUrl}</p>
         </div>
         <div style={styles.statusBadge}>
-          {isOnline ? (
-            <>
-              <span style={styles.statusDot} />
-              <span style={styles.statusText}>ONLINE</span>
-            </>
-          ) : (
-            <>
-              <span style={{ ...styles.statusDot, backgroundColor: 'var(--auth-error)' }} />
-              <span style={{ ...styles.statusText, color: 'var(--auth-error)' }}>OFFLINE</span>
-            </>
-          )}
+          <span style={{ ...styles.statusDot, backgroundColor: status.dotColor }} />
+          <span style={{ ...styles.statusText, color: status.color }}>{status.label}</span>
         </div>
       </div>
 
       <div style={styles.cardsGrid}>
         <StatCard
-          title="Latencia Promedio"
+          title="Current Latency"
+          value={ultimoLog?.latencia_ms ?? null}
+          unit="ms"
+          color={
+            ultimoLog?.latencia_ms == null
+              ? 'var(--db-outline-variant)'
+              : ultimoLog.latencia_ms < 200
+                ? '#4ade80'
+                : ultimoLog.latencia_ms < 400
+                  ? '#e7c365'
+                  : '#ff6b6b'
+          }
+          icon="⚡"
+        />
+        <StatCard
+          title="Historical Average"
           value={stats.latenciaPromedio}
           unit="ms"
           color="var(--auth-primary)"
-          icon="⚡"
+          icon="📊"
         />
         <StatCard
           title="Latencia Mínima"
@@ -200,12 +219,14 @@ export function SitioDetailPage({ sitioId, onBack }) {
       </div>
 
       <div style={styles.gaugeContainer}>
-        <LatencyGauge latencia={stats.latenciaPromedio} max={500} />
+        <LatencyGauge latencia={ultimoLog?.latencia_ms ?? null} max={500} />
       </div>
 
-      {stats.logs && stats.logs.length > 0 && (
-        <LatencyChart logs={stats.logs} />
-      )}
+      <Suspense fallback={<div className="db-skeleton" style={{ ...styles.chartSkeleton, height: '260px', padding: '20px' }} />}>
+        {stats.logs && stats.logs.length > 0 && (
+          <LatencyChart logs={stats.logs} />
+        )}
+      </Suspense>
 
       <div style={styles.infoBox}>
         <p style={styles.infoText}>

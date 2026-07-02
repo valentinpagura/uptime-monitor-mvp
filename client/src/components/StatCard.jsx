@@ -1,7 +1,7 @@
-import { useRef } from 'react';
+import { memo, useRef } from 'react';
 import { useMagicEffects } from '../hooks/useMagicEffects';
 
-export function StatCard({ title, value, unit, color, icon }) {
+export const StatCard = memo(function StatCard({ title, value, unit, color, icon }) {
   const cardRef = useRef(null);
   useMagicEffects(cardRef);
 
@@ -17,7 +17,7 @@ export function StatCard({ title, value, unit, color, icon }) {
       </div>
     </div>
   );
-}
+});
 
 const styles = {
   card: {
