@@ -1,9 +1,10 @@
-import { useState, useEffect, useContext, useRef, lazy, Suspense } from 'react';
+import { useState, useEffect, useContext, useRef, useCallback, lazy, Suspense } from 'react';
 import { AuthContext } from '../contexts/AuthContext';
 import { getSitioStats } from '../services/api';
 import { StatCard } from '../components/StatCard';
 import { LatencyGauge } from '../components/LatencyGauge';
 import { getStatus } from '../utils/status';
+import { usePolling } from '../hooks/usePolling';
 import { gsap } from 'gsap';
 
 const LatencyChart = lazy(() =>
@@ -81,40 +82,20 @@ export function SitioDetailPage({ sitioId, onBack }) {
     });
   }
 
-  useEffect(() => {
-    const node = pageRef.current;
-    let mounted = true;
-    let isFirstLoad = true;
-
-    async function cargarStats() {
-      try {
-        const data = await getSitioStats(sitioId, token);
-        if (!mounted) return;
-        setStats(data);
-        setError(null);
-      } catch (err) {
-        console.error('Error cargando stats:', err);
-        if (!mounted) return;
-        setError('Error cargando estadísticas');
-      } finally {
-        if (mounted && isFirstLoad) {
-          setCargando(false);
-          isFirstLoad = false;
-        }
-      }
+  const cargarStats = useCallback(async () => {
+    try {
+      const data = await getSitioStats(sitioId, token);
+      setStats(data);
+      setError(null);
+    } catch (err) {
+      console.error('Error cargando stats:', err);
+      setError('Error cargando estadísticas');
+    } finally {
+      setCargando(false);
     }
-
-    cargarStats();
-    const interval = setInterval(() => {
-      if (mounted) cargarStats();
-    }, 10000);
-
-    return () => {
-      mounted = false;
-      clearInterval(interval);
-      gsap.killTweensOf(node);
-    };
   }, [sitioId, token]);
+
+  usePolling(cargarStats, 10000);
 
   if (cargando) {
     return <div ref={pageRef}><SkeletonBlocks /></div>;

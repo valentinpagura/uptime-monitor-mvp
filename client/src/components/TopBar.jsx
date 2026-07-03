@@ -1,27 +1,28 @@
 export function TopBar({ searchValue, onSearchChange, onRefresh }) {
   return (
-    <header style={styles.header}>
+    <header style={styles.header} role="banner">
       <div style={styles.left}>
-        <span style={styles.searchIcon}>{'\uD83D\uDD0D'}</span>
+        <span style={styles.searchIcon} aria-hidden="true">{'\uD83D\uDD0D'}</span>
         <input
           className="db-search-input"
           placeholder="Search systems..."
           type="text"
           value={searchValue}
           onChange={onSearchChange}
+          aria-label="Search monitors"
         />
       </div>
 
-      <div style={styles.centerTitle}>System Monitor</div>
+      <div style={styles.centerTitle} aria-hidden="true">System Monitor</div>
 
       <div style={styles.right}>
-        <button className="db-topbar-btn" aria-label="Notifications">
+        <button className="db-topbar-btn" aria-label="Notifications" tabIndex={-1}>
           {'\uD83D\uDD14'}
         </button>
         <button className="db-topbar-btn" aria-label="Refresh" onClick={onRefresh}>
           {'\uD83D\uDD04'}
         </button>
-        <button className="db-topbar-btn" aria-label="Terminal">
+        <button className="db-topbar-btn" aria-label="Terminal" tabIndex={-1}>
           {'\uD83D\uDCBB'}
         </button>
       </div>

@@ -31,9 +31,7 @@ const SitioTableRow = memo(function SitioTableRow({ sitio, onRowClick, onDelete 
   const handleDelete = useCallback(
     (e) => {
       e.stopPropagation();
-      if (window.confirm(`Delete "${sitio.nombre || sitio.url}"?`)) {
-        onDelete(sitio.id);
-      }
+      onDelete(sitio.id);
       setMenuOpen(false);
     },
     [sitio, onDelete],

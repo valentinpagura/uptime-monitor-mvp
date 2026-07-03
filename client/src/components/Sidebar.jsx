@@ -23,7 +23,7 @@ export function Sidebar({ onAddProbe, onLogout }) {
   }, [onLogout]);
 
   return (
-    <nav style={styles.nav} className="db-sidebar">
+      <nav style={styles.nav} className="db-sidebar" aria-label="Main navigation">
       <div style={styles.logoSection}>
         <div style={styles.logoIcon}>
           <span style={styles.logoEmoji}>{'\uD83D\uDCBB'}</span>
@@ -34,7 +34,7 @@ export function Sidebar({ onAddProbe, onLogout }) {
         </div>
       </div>
 
-      <button onClick={handleAddProbe} style={styles.addBtn} className="db-add-probe-btn">
+      <button onClick={handleAddProbe} style={styles.addBtn} className="db-add-probe-btn" aria-label="Add new monitor probe">
         <span style={styles.addBtnIcon}>{'\u2795'}</span>
         Deploy Probe
       </button>
@@ -51,6 +51,9 @@ export function Sidebar({ onAddProbe, onLogout }) {
                   : 'sidebar-nav-item'
             }
             style={styles.navItem}
+            aria-current={item.active ? 'page' : undefined}
+            aria-disabled={item.inert ? true : undefined}
+            role="menuitem"
           >
             <span style={styles.navIcon}>{item.icon}</span>
             <span>{item.label}</span>
@@ -69,6 +72,10 @@ export function Sidebar({ onAddProbe, onLogout }) {
             }
             style={styles.navItem}
             onClick={item.id === 'signout' ? handleSignOut : undefined}
+            onKeyDown={item.id === 'signout' ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSignOut(); } } : undefined}
+            aria-disabled={item.inert ? true : undefined}
+            role="menuitem"
+            tabIndex={item.id === 'signout' ? 0 : undefined}
           >
             <span style={styles.navIcon}>{item.icon}</span>
             <span>{item.label}</span>

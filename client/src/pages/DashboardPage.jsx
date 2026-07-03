@@ -1,26 +1,30 @@
 import { useState, useEffect, useCallback, useMemo, useRef, useContext } from 'react';
 import { AuthContext } from '../contexts/AuthContext';
+import { ToastContext } from '../contexts/ToastContext';
 import { getSitios, getLogs, createSitio, deleteSitio } from '../services/api';
 import { Sidebar } from '../components/Sidebar';
 import { TopBar } from '../components/TopBar';
 import { KpiCard } from '../components/KpiCard';
 import { SitiosTable } from '../components/SitiosTable';
 import { AddSiteForm } from '../components/AddSiteForm';
+import { ConfirmModal } from '../components/ConfirmModal';
 import { SitioDetailPage } from './SitioDetailPage';
 import Particles from '../components/Particles';
 import { useSpotlight } from '../hooks/useSpotlight';
 import { useStaggerReveal } from '../hooks/useStaggerReveal';
 import { useDebounce } from '../hooks/useDebounce';
+import { usePolling } from '../hooks/usePolling';
 import { useDashboardMetrics } from '../hooks/useDashboardMetrics';
 
 export function DashboardPage() {
-  const { user, token, logout } = useContext(AuthContext);
+  const { token, logout } = useContext(AuthContext);
+  const { addToast } = useContext(ToastContext);
   const [sitios, setSitios] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearch = useDebounce(searchQuery, 250);
   const [sitioSeleccionado, setSitioSeleccionado] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const urlInputRef = useRef(null);
   const contentRef = useRef(null);
   const kpiGridRef = useRef(null);
@@ -48,25 +52,10 @@ export function DashboardPage() {
     } catch (err) {
       console.error('Error cargando sitios:', err);
       setError('Error al cargar los sitios');
-    } finally {
-      setLoading(false);
     }
   }, [token]);
 
-  useEffect(() => {
-    let mounted = true;
-
-    loadSitios();
-
-    const interval = setInterval(() => {
-      if (mounted) loadSitios();
-    }, 10000);
-
-    return () => {
-      mounted = false;
-      clearInterval(interval);
-    };
-  }, [loadSitios]);
+  usePolling(loadSitios, 10000);
 
   useEffect(() => {
     const prevBg = document.body.style.backgroundColor;
@@ -88,17 +77,27 @@ export function DashboardPage() {
     setSitioSeleccionado(sitioId);
   }, []);
 
-  const handleDelete = useCallback(
-    async (sitioId) => {
-      try {
-        await deleteSitio(sitioId, token);
-        loadSitios();
-      } catch (err) {
-        console.error('Error eliminando sitio:', err);
-      }
-    },
-    [token, loadSitios],
-  );
+  const handleDeleteRequest = useCallback((sitioId) => {
+    setDeleteTarget(sitioId);
+  }, []);
+
+  const handleDeleteConfirm = useCallback(async () => {
+    if (!deleteTarget) return;
+    try {
+      await deleteSitio(deleteTarget, token);
+      addToast('Monitor deleted successfully', 'success');
+      loadSitios();
+    } catch (err) {
+      addToast('Failed to delete monitor', 'error');
+      console.error('Error eliminando sitio:', err);
+    } finally {
+      setDeleteTarget(null);
+    }
+  }, [deleteTarget, token, loadSitios, addToast]);
+
+  const handleDeleteCancel = useCallback(() => {
+    setDeleteTarget(null);
+  }, []);
 
   const handleRefresh = useCallback(() => {
     loadSitios();
@@ -111,9 +110,10 @@ export function DashboardPage() {
   const handleAddSite = useCallback(
     async (url, nombre, frecuencia) => {
       await createSitio(url, nombre, frecuencia, token);
+      addToast('Monitor created successfully', 'success');
       loadSitios();
     },
-    [token, loadSitios],
+    [token, loadSitios, addToast],
   );
 
   const handleAddProbe = useCallback(() => {
@@ -175,10 +175,20 @@ export function DashboardPage() {
 
           <div className="db-dashboard-grid">
             <AddSiteForm onSubmit={handleAddSite} inputRef={urlInputRef} />
-            <SitiosTable sitios={filteredSitios} onRowClick={handleRowClick} onDelete={handleDelete} />
+            <SitiosTable sitios={filteredSitios} onRowClick={handleRowClick} onDelete={handleDeleteRequest} />
           </div>
         </div>
       </main>
+      <ConfirmModal
+        isOpen={deleteTarget != null}
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
+        title="Delete Monitor"
+        description={`Are you sure you want to delete this monitor? This action cannot be undone.`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="danger"
+      />
     </div>
   );
 }
