@@ -4,6 +4,7 @@ import { getSitioStats } from '../services/api';
 import { StatCard } from '../components/StatCard';
 import { LatencyGauge } from '../components/LatencyGauge';
 import { getStatus } from '../utils/status';
+import { formatLocalDateTime } from '../utils/formatLocalTime';
 import { usePolling } from '../hooks/usePolling';
 import { gsap } from 'gsap';
 
@@ -216,7 +217,7 @@ export function SitioDetailPage({ sitioId, onBack }) {
         {ultimoLog && (
           <p style={styles.infoText}>
             <strong>Último chequeo:</strong>{' '}
-            {new Date(ultimoLog.created_at).toLocaleString('es-AR')}
+            {formatLocalDateTime(ultimoLog.created_at)}
           </p>
         )}
       </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef, useContext } from 'react';
+import { useState, useEffect, useCallback, useRef, useContext } from 'react';
 import { AuthContext } from '../contexts/AuthContext';
 import { ToastContext } from '../contexts/ToastContext';
 import { getSitios, getLogs, createSitio, deleteSitio } from '../services/api';
@@ -12,7 +12,6 @@ import { SitioDetailPage } from './SitioDetailPage';
 import Particles from '../components/Particles';
 import { useSpotlight } from '../hooks/useSpotlight';
 import { useStaggerReveal } from '../hooks/useStaggerReveal';
-import { useDebounce } from '../hooks/useDebounce';
 import { usePolling } from '../hooks/usePolling';
 import { useDashboardMetrics } from '../hooks/useDashboardMetrics';
 
@@ -22,7 +21,6 @@ export function DashboardPage() {
   const [sitios, setSitios] = useState([]);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const debouncedSearch = useDebounce(searchQuery, 250);
   const [sitioSeleccionado, setSitioSeleccionado] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const urlInputRef = useRef(null);
@@ -123,14 +121,14 @@ export function DashboardPage() {
     }
   }, []);
 
-  const filteredSitios = useMemo(() => {
-    if (!debouncedSearch) return sitios;
+  const handleSearchSelect = useCallback((sitioId) => {
+    setSearchQuery('');
+    setSitioSeleccionado(sitioId);
+  }, []);
 
-    const q = debouncedSearch.toLowerCase();
-    return sitios.filter(
-      (s) => (s.nombre && s.nombre.toLowerCase().includes(q)) || s.url.toLowerCase().includes(q),
-    );
-  }, [sitios, debouncedSearch]);
+  const handleSearchClose = useCallback(() => {
+    setSearchQuery('');
+  }, []);
 
   const { kpis } = useDashboardMetrics(sitios);
 
@@ -156,7 +154,14 @@ export function DashboardPage() {
             pixelRatio={1}
           />
         </div>
-        <TopBar searchValue={searchQuery} onSearchChange={handleSearchChange} onRefresh={handleRefresh} />
+        <TopBar
+          searchValue={searchQuery}
+          onSearchChange={handleSearchChange}
+          onRefresh={handleRefresh}
+          sitios={sitios}
+          onSearchSelect={handleSearchSelect}
+          onSearchClose={handleSearchClose}
+        />
         <div ref={contentRef} style={styles.content} className="db-content">
           <div style={styles.headerRow}>
             <p style={styles.pageSubtitle}>
@@ -175,7 +180,7 @@ export function DashboardPage() {
 
           <div className="db-dashboard-grid">
             <AddSiteForm onSubmit={handleAddSite} inputRef={urlInputRef} />
-            <SitiosTable sitios={filteredSitios} onRowClick={handleRowClick} onDelete={handleDeleteRequest} />
+            <SitiosTable sitios={sitios} onRowClick={handleRowClick} onDelete={handleDeleteRequest} />
           </div>
         </div>
       </main>

@@ -41,11 +41,11 @@ createTables();
 const cron = require('node-cron');
 const workerLoop = require('./worker');
 
-const job = cron.schedule('*/5 * * * *', async () => {
+const job = cron.schedule('* * * * *', async () => {
   await workerLoop();
 });
 
-console.log('[CRON] Worker iniciado. Se ejecutará cada 5 minutos.');
+console.log('[CRON] Worker iniciado. Se ejecutará cada 1 minuto.');
 
 const PORT = process.env.PORT;
 const server = app.listen(PORT, () => {

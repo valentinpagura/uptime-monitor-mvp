@@ -64,9 +64,9 @@ describe('SitiosTable', () => {
     expect(screen.getByText('DOWN')).toBeInTheDocument();
   });
 
-  it('shows WARN status for high latency site', () => {
+  it('shows SLOW status for very high latency site (>= 400ms)', () => {
     render(<SitiosTable sitios={[mockSitios[2]]} onRowClick={() => {}} onDelete={() => {}} />);
-    expect(screen.getByText('WARN')).toBeInTheDocument();
+    expect(screen.getByText('SLOW')).toBeInTheDocument();
   });
 
   it('shows PENDING status for site without logs', () => {

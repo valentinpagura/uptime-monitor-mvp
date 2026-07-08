@@ -28,7 +28,7 @@ describe('useDashboardMetrics', () => {
   it('counts passing sites correctly', () => {
     const sitios = [
       { id: 1, ultimoLog: { is_online: true, latencia_ms: 100 } },
-      { id: 2, ultimoLog: { is_online: true, latencia_ms: 200 } },
+      { id: 2, ultimoLog: { is_online: true, latencia_ms: 199 } },
       { id: 3, ultimoLog: { is_online: true, latencia_ms: 50 } },
     ];
     const { result } = renderHook(() => useDashboardMetrics(sitios));

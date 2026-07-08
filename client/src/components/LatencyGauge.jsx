@@ -4,7 +4,7 @@ export const LatencyGauge = memo(function LatencyGauge({ latencia, max = 500 }) 
   const hasData = latencia != null;
   const safeLatencia = latencia ?? 0;
   const clampedRatio = Math.min(safeLatencia / max, 1);
-  const angle = clampedRatio * 180;
+  const angle = -90 + (hasData ? clampedRatio : 0) * 180;
 
   let color;
   if (!hasData) color = 'var(--db-outline-variant)';
@@ -12,21 +12,22 @@ export const LatencyGauge = memo(function LatencyGauge({ latencia, max = 500 }) 
   else if (safeLatencia < 400) color = '#e7c365';
   else color = '#ff6b6b';
 
-  const arcEndX = 20 + 160 * (hasData ? clampedRatio : 0);
-  const arcEndY = 100 - 80 * Math.sin((hasData ? clampedRatio : 0) * Math.PI);
+  const ratio = hasData ? clampedRatio : 0;
+  const arcEndX = 100 - 80 * Math.cos(ratio * Math.PI);
+  const arcEndY = 100 - 80 * Math.sin(ratio * Math.PI);
 
   return (
     <div style={styles.container} className="magic-glow-card">
       <svg viewBox="0 0 200 120" style={styles.svg}>
         <path
-          d="M 20 100 A 80 80 0 0 1 180 100"
+          d="M 20 100 A 80 80 0 0 0 180 100"
           stroke="var(--db-surface-container-high)"
           strokeWidth="10"
           fill="none"
           strokeLinecap="round"
         />
         <path
-          d={`M 20 100 A 80 80 0 0 1 ${arcEndX} ${arcEndY}`}
+          d={`M 20 100 A 80 80 0 0 0 ${arcEndX} ${arcEndY}`}
           stroke={color}
           strokeWidth="10"
           fill="none"
@@ -65,37 +66,32 @@ export const LatencyGauge = memo(function LatencyGauge({ latencia, max = 500 }) 
 
 const styles = {
   container: {
-    position: 'relative',
     width: '100%',
     maxWidth: '300px',
     margin: '0 auto',
     backgroundColor: 'var(--db-bg-card)',
     border: '1px solid var(--db-border-card)',
     borderRadius: '8px',
-    padding: '20px',
+    padding: '20px 20px 4px',
     overflow: 'hidden',
   },
   svg: {
     width: '100%',
     height: 'auto',
+    display: 'block',
   },
   valueBox: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
     textAlign: 'center',
-    zIndex: 10,
+    padding: '2px 0 14px',
   },
   latenciaValue: {
-    display: 'block',
     fontSize: '32px',
     fontWeight: 'bold',
   },
   latenciaUnit: {
-    display: 'block',
     fontSize: '12px',
     color: 'var(--auth-on-surface-variant)',
     fontWeight: '500',
+    marginLeft: '4px',
   },
 };

@@ -22,17 +22,17 @@ describe('LatencyChart', () => {
     expect(canvas).toBeInTheDocument();
   });
 
-  it('renders empty state gracefully with empty logs array', () => {
+  it('renders nothing with empty logs array', () => {
     const { container } = render(<LatencyChart logs={[]} />);
-    const canvas = container.querySelector('canvas');
-    expect(canvas).toBeInTheDocument();
+    expect(container.firstChild).toBeNull();
   });
 
-  it('renders with a single log entry', () => {
+  it('renders a first-data message with a single log entry (no canvas)', () => {
     const singleLog = [sampleLogs[0]];
     const { container } = render(<LatencyChart logs={singleLog} />);
     const canvas = container.querySelector('canvas');
-    expect(canvas).toBeInTheDocument();
+    expect(canvas).toBeNull();
+    expect(screen.getByText('Esperando más datos para mostrar el gráfico.')).toBeInTheDocument();
   });
 
   it('reverses logs so most recent is last', () => {

@@ -1,9 +1,21 @@
 import { useEffect, useRef, useCallback } from 'react';
 
+function safeExecute(fn, pendingRef) {
+  if (pendingRef.current) return;
+  pendingRef.current = true;
+  const result = fn();
+  if (result && typeof result.then === 'function') {
+    result.finally(() => { pendingRef.current = false; });
+  } else {
+    pendingRef.current = false;
+  }
+}
+
 export function usePolling(callback, intervalMs, options = {}) {
   const { enabled = true } = options;
   const callbackRef = useRef(callback);
   const mountedRef = useRef(true);
+  const pendingRef = useRef(false);
 
   useEffect(() => {
     callbackRef.current = callback;
@@ -13,12 +25,12 @@ export function usePolling(callback, intervalMs, options = {}) {
     mountedRef.current = true;
 
     if (enabled) {
-      callbackRef.current();
+      safeExecute(callbackRef.current, pendingRef);
     }
 
     const id = setInterval(() => {
-      if (mountedRef.current) {
-        callbackRef.current();
+      if (mountedRef.current && enabled) {
+        safeExecute(callbackRef.current, pendingRef);
       }
     }, intervalMs);
 
@@ -30,7 +42,7 @@ export function usePolling(callback, intervalMs, options = {}) {
 
   const refresh = useCallback(() => {
     if (mountedRef.current) {
-      callbackRef.current();
+      safeExecute(callbackRef.current, pendingRef);
     }
   }, []);
 

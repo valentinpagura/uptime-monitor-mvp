@@ -8,6 +8,8 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: './src/test/setup.js',
+    include: ['src/test/**/*.{test,spec}.?(c|m)[jt]s?(x)'],
+    exclude: ['node_modules_bak/**'],
     css: true,
   },
 })

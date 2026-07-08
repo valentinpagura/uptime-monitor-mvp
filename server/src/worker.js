@@ -15,9 +15,32 @@ async function workerLoop() {
       return;
     }
 
-    console.log(`[WORKER] Monitoreando ${sitios.length} sitios (concurrencia: ${CONCURRENCY})...`);
+    const dueResult = await pool.query(`
+      SELECT s.id, s.url, s.nombre, s.frecuencia_minutos,
+             l.created_at AS ultimo_chequeo
+      FROM sitios s
+      LEFT JOIN LATERAL (
+        SELECT created_at FROM logs
+        WHERE sitio_id = s.id
+        ORDER BY created_at DESC
+        LIMIT 1
+      ) l ON true
+    `);
+    const now = new Date();
+    const sitiosDebidos = dueResult.rows.filter((sitio) => {
+      if (!sitio.ultimo_chequeo) return true;
+      const diffMin = (now - new Date(sitio.ultimo_chequeo)) / 60000;
+      return diffMin >= sitio.frecuencia_minutos;
+    });
 
-    const results = await runWithConcurrency(sitios, CONCURRENCY, async (sitio) => {
+    if (sitiosDebidos.length === 0) {
+      console.log('[WORKER] Todos los sitios ya fueron chequeados recientemente. Saltando ciclo.');
+      return;
+    }
+
+    console.log(`[WORKER] Monitoreando ${sitiosDebidos.length}/${sitios.length} sitios debidos (concurrencia: ${CONCURRENCY})...`);
+
+    const results = await runWithConcurrency(sitiosDebidos, CONCURRENCY, async (sitio) => {
       let latencia = null;
       let statusCode = null;
       let isOnline = false;
@@ -42,7 +65,7 @@ async function workerLoop() {
     });
 
     const onlineCount = results.filter((r) => r.status === 'fulfilled' && r.value.isOnline).length;
-    console.log(`[WORKER] Ciclo completado. ${onlineCount}/${sitios.length} sitios online. Esperando próximo chequeo...`);
+    console.log(`[WORKER] Ciclo completado. ${onlineCount}/${sitiosDebidos.length} sitios online. Esperando próximo chequeo...`);
   } catch (err) {
     console.error('[WORKER] Error fatal:', err);
   }

@@ -32,17 +32,17 @@ function createSitiosRouter(pool) {
         return res.json({
           message: 'Sin datos de monitoreo aún',
           sitio: { id: sitio.id, url: sitio.url, nombre: sitio.nombre },
-          latenciaPromedio: 0,
-          latenciaMin: 0,
-          latenciaMax: 0,
+          latenciaPromedio: null,
+          latenciaMin: null,
+          latenciaMax: null,
           ultimoLog: null,
-          uptime: 0,
+          uptime: null,
           totalChequeos: 0,
         });
       }
 
       const latencias = logs
-        .filter((log) => log.latencia_ms)
+        .filter((log) => log.latencia_ms != null)
         .map((log) => log.latencia_ms);
 
       const latenciaPromedio =

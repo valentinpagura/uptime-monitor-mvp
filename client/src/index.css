@@ -316,6 +316,12 @@ input, button, textarea, select {
   color: var(--auth-error);
 }
 
+/* ── Search Dropdown ── */
+
+.db-search-dropdown-item:hover {
+  background-color: var(--db-surface-container-high);
+}
+
 /* ── Dashboard Form Elements ── */
 
 .db-input {

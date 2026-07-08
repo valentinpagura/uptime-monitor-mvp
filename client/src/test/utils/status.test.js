@@ -26,8 +26,24 @@ describe('getStatus', () => {
     });
   });
 
-  it('returns WARN when latencia_ms > 400 and online', () => {
+  it('returns SLOW when latencia_ms >= 400 and online', () => {
     const log = { is_online: true, latencia_ms: 450 };
+    const result = getStatus(log);
+    expect(result).toEqual({
+      label: 'SLOW',
+      color: 'var(--auth-error)',
+      dotColor: 'var(--auth-error)',
+    });
+  });
+
+  it('returns SLOW when latencia_ms is exactly 400 and online', () => {
+    const log = { is_online: true, latencia_ms: 400 };
+    const result = getStatus(log);
+    expect(result.label).toBe('SLOW');
+  });
+
+  it('returns WARN when latencia_ms is between 200 and 399 and online', () => {
+    const log = { is_online: true, latencia_ms: 250 };
     const result = getStatus(log);
     expect(result).toEqual({
       label: 'WARN',
@@ -36,16 +52,10 @@ describe('getStatus', () => {
     });
   });
 
-  it('returns WARN when latencia_ms is exactly 401 and online', () => {
-    const log = { is_online: true, latencia_ms: 401 };
+  it('returns WARN when latencia_ms is exactly 200 and online', () => {
+    const log = { is_online: true, latencia_ms: 200 };
     const result = getStatus(log);
     expect(result.label).toBe('WARN');
-  });
-
-  it('returns UP when latencia_ms is exactly 400 and online', () => {
-    const log = { is_online: true, latencia_ms: 400 };
-    const result = getStatus(log);
-    expect(result.label).toBe('UP');
   });
 
   it('returns UP when latencia_ms is 0 and online', () => {

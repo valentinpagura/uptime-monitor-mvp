@@ -13,7 +13,7 @@ function computeSiteMetrics(sitios) {
 
     if (!log.is_online) {
       failed++;
-    } else if (log.latencia_ms != null && log.latencia_ms > 400) {
+    } else if (log.latencia_ms != null && log.latencia_ms >= 200) {
       warnings++;
     } else {
       passing++;
