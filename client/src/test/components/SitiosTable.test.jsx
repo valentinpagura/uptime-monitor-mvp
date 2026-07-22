@@ -31,6 +31,13 @@ const mockSitios = [
     frecuencia_minutos: 5,
     ultimoLog: null,
   },
+  {
+    id: 5,
+    url: 'https://warn-site.com',
+    nombre: 'Warn',
+    frecuencia_minutos: 5,
+    ultimoLog: { is_online: true, latencia_ms: 250, created_at: '2026-07-02T12:00:00Z' },
+  },
 ];
 
 describe('SitiosTable', () => {
@@ -137,5 +144,24 @@ describe('SitiosTable', () => {
   it('shows site URL in table', () => {
     render(<SitiosTable sitios={[mockSitios[0]]} onRowClick={() => {}} onDelete={() => {}} />);
     expect(screen.getByText('https://google.com')).toBeInTheDocument();
+  });
+
+  it('shows WARN status for site with latency 200-399ms', () => {
+    render(<SitiosTable sitios={[mockSitios[4]]} onRowClick={() => {}} onDelete={() => {}} />);
+    expect(screen.getByText('WARN')).toBeInTheDocument();
+  });
+
+  it('shows correct latency for WARN status site', () => {
+    render(<SitiosTable sitios={[mockSitios[4]]} onRowClick={() => {}} onDelete={() => {}} />);
+    expect(screen.getByText('250ms')).toBeInTheDocument();
+  });
+
+  it('closes context menu when clicking outside', () => {
+    render(<SitiosTable sitios={[mockSitios[0]]} onRowClick={() => {}} onDelete={() => {}} />);
+    const menuBtn = document.querySelector('.db-row-menu-btn');
+    fireEvent.click(menuBtn);
+    expect(screen.getByText((c, el) => el.tagName === 'BUTTON' && c.includes('Eliminar'))).toBeInTheDocument();
+    fireEvent.mouseDown(document.body);
+    expect(screen.queryByText((c, el) => el.tagName === 'BUTTON' && c.includes('Eliminar'))).not.toBeInTheDocument();
   });
 });

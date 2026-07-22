@@ -109,6 +109,23 @@ describe('AuthContext', () => {
       expect(screen.getByTestId('token')).toHaveTextContent('null');
       expect(screen.getByTestId('user')).toHaveTextContent('null');
     });
+
+    it('restores fecha_registro from token payload', () => {
+      const futureExp = Math.floor(Date.now() / 1000) + 3600;
+      const token = createToken({ id: 3, email: 'u@t.com', fecha_registro: '2024-01-15T00:00:00.000Z', exp: futureExp });
+      localStorage.setItem('token', token);
+      renderProvider();
+      expect(screen.getByTestId('token')).toHaveTextContent(token);
+      expect(screen.getByTestId('user')).toHaveTextContent('"fecha_registro":"2024-01-15T00:00:00.000Z"');
+    });
+
+    it('logs error to console when token is malformed', () => {
+      const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      localStorage.setItem('token', 'not-a-valid-jwt');
+      renderProvider();
+      expect(spy).toHaveBeenCalled();
+      spy.mockRestore();
+    });
   });
 
   describe('login', () => {
@@ -244,6 +261,46 @@ describe('AuthContext', () => {
 
       await waitFor(() => {
         expect(screen.getByTestId('error')).toHaveTextContent('Error conectando con el servidor');
+      });
+    });
+
+    it('shows loading state during register', async () => {
+      let resolvePromise;
+      api.registerUser.mockReturnValue(new Promise((resolve) => { resolvePromise = resolve; }));
+
+      renderProvider();
+      await act(async () => {
+        screen.getByTestId('btn-register').click();
+      });
+
+      expect(screen.getByTestId('loading')).toHaveTextContent('true');
+
+      await act(async () => {
+        resolvePromise({ token: 't', usuario: { id: 3, email: 'c@d.com' } });
+      });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('loading')).toHaveTextContent('false');
+      });
+    });
+
+    it('clears previous error before register', async () => {
+      api.registerUser
+        .mockRejectedValueOnce(new Error('First error'))
+        .mockResolvedValueOnce({ token: 't', usuario: { id: 4, email: 'e@f.com' } });
+
+      renderProvider();
+      await act(async () => { screen.getByTestId('btn-register').click(); });
+      await waitFor(() => {
+        expect(screen.getByTestId('error')).not.toHaveTextContent('null');
+      });
+
+      api.registerUser.mockClear();
+      api.registerUser.mockResolvedValue({ token: 't2', usuario: { id: 5, email: 'g@h.com' } });
+
+      await act(async () => { screen.getByTestId('btn-register').click(); });
+      await waitFor(() => {
+        expect(screen.getByTestId('error')).toHaveTextContent('null');
       });
     });
   });

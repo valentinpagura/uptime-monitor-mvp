@@ -54,4 +54,15 @@ describe('KpiCard', () => {
     expect(screen.getByText('Warnings')).toBeInTheDocument();
     expect(screen.getByText('3')).toBeInTheDocument();
   });
+
+  it('renders zero value as "0" not em dash', () => {
+    render(<KpiCard label="Count" value={0} variant="neutral" unit="ms" />);
+    expect(screen.getByText('0')).toBeInTheDocument();
+    expect(screen.queryByText('—')).not.toBeInTheDocument();
+  });
+
+  it('renders zero value without unit for primary variant', () => {
+    render(<KpiCard label="Passing" value={0} variant="primary" />);
+    expect(screen.getByText('0')).toBeInTheDocument();
+  });
 });

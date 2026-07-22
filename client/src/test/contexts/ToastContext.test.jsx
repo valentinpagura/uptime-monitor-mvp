@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach, useFakeTimers, useRealTimers } from 'vitest';
 import { render, screen, act, waitFor } from '@testing-library/react';
-import { useContext } from 'react';
+import { useContext, useState } from 'react';
 import { ToastContext, ToastProvider } from '../../contexts/ToastContext';
 
 function TestConsumer({ onReady } = {}) {
@@ -25,6 +25,28 @@ function TestConsumer({ onReady } = {}) {
       <button data-testid="btn-custom-duration" onClick={() => addToast('Quick toast', 'info', 100)}>
         Custom
       </button>
+      <button data-testid="btn-unknown-type" onClick={() => addToast('Unknown type toast', 'unknown')}>
+        Unknown
+      </button>
+      <button data-testid="btn-empty-message" onClick={() => addToast('', 'info')}>
+        Empty
+      </button>
+      <button data-testid="btn-long-message" onClick={() => addToast('A'.repeat(500), 'info')}>
+        Long
+      </button>
+    </div>
+  );
+}
+
+function ReturnValueConsumer() {
+  const { addToast } = useContext(ToastContext);
+  const [lastId, setLastId] = useState(null);
+  return (
+    <div>
+      <button data-testid="btn-get-id" onClick={() => { const id = addToast('test', 'info'); setLastId(id); }}>
+        GetId
+      </button>
+      <div data-testid="last-id">{lastId !== null ? lastId : 'null'}</div>
     </div>
   );
 }
@@ -193,6 +215,88 @@ describe('ToastContext', () => {
       const closeBtn = screen.getByLabelText('Close notification');
       expect(closeBtn).toBeInTheDocument();
       expect(closeBtn.tagName).toBe('BUTTON');
+    });
+  });
+
+  describe('edge cases', () => {
+    it('falls back to info icon for unknown type', () => {
+      renderProvider();
+      act(() => {
+        screen.getByTestId('btn-unknown-type').click();
+      });
+      expect(screen.getByText('Unknown type toast')).toBeInTheDocument();
+    });
+
+    it('renders toast with empty message', () => {
+      renderProvider();
+      act(() => {
+        screen.getByTestId('btn-empty-message').click();
+      });
+      const toast = screen.getByRole('status');
+      expect(toast).toBeInTheDocument();
+    });
+
+    it('renders toast with very long message', () => {
+      renderProvider();
+      act(() => {
+        screen.getByTestId('btn-long-message').click();
+      });
+      expect(screen.getByText('A'.repeat(500))).toBeInTheDocument();
+    });
+  });
+
+  describe('addToast return value', () => {
+    it('returns a numeric id', () => {
+      render(
+        <ToastProvider>
+          <ReturnValueConsumer />
+        </ToastProvider>,
+      );
+      act(() => {
+        screen.getByTestId('btn-get-id').click();
+      });
+      const idText = screen.getByTestId('last-id').textContent;
+      expect(Number(idText)).toBeGreaterThan(0);
+    });
+  });
+
+  describe('removing styles', () => {
+    it('applies removing opacity and transform when toast is dismissed', () => {
+      renderProvider();
+      act(() => {
+        screen.getByTestId('btn-success').click();
+      });
+      const closeBtn = screen.getByLabelText('Close notification');
+      act(() => {
+        closeBtn.click();
+      });
+      const toastEl = screen.getByText('Operation ok').closest('[role="status"]');
+      expect(toastEl).toHaveStyle('opacity: 0');
+      expect(toastEl).toHaveStyle('transform: translateX(30px)');
+    });
+  });
+
+  describe('multiple toasts with close', () => {
+    it('close button removes only the specific toast', () => {
+      renderProvider();
+      act(() => {
+        screen.getByTestId('btn-success').click();
+        screen.getByTestId('btn-error').click();
+      });
+      expect(screen.getByText('Operation ok')).toBeInTheDocument();
+      expect(screen.getByText('Something failed')).toBeInTheDocument();
+
+      const closeButtons = screen.getAllByLabelText('Close notification');
+      expect(closeButtons).toHaveLength(2);
+
+      act(() => {
+        closeButtons[0].click();
+      });
+      act(() => {
+        vi.advanceTimersByTime(400);
+      });
+      expect(screen.queryByText('Operation ok')).not.toBeInTheDocument();
+      expect(screen.getByText('Something failed')).toBeInTheDocument();
     });
   });
 

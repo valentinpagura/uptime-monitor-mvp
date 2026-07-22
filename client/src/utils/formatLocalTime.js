@@ -2,6 +2,7 @@ const TZ_OFFSET_RE = /[+-]\d{2}:\d{2}$/;
 
 export function toDate(dateString) {
   if (!dateString) return null;
+  if (dateString instanceof Date) return dateString;
   if (dateString.endsWith('Z') || TZ_OFFSET_RE.test(dateString)) {
     return new Date(dateString);
   }

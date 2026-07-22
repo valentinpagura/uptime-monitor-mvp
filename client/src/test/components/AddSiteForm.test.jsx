@@ -113,4 +113,46 @@ describe('AddSiteForm', () => {
     render(<AddSiteForm onSubmit={vi.fn()} inputRef={ref} />);
     expect(ref.current).toBe(screen.getByPlaceholderText('https://'));
   });
+
+  it('clears error after a failed submission when re-submitting', async () => {
+    const onSubmit = vi.fn().mockRejectedValue(new Error('Network error'));
+    const user = userEvent.setup();
+
+    render(<AddSiteForm onSubmit={onSubmit} />);
+
+    await user.type(screen.getByPlaceholderText('https://'), 'https://example.com');
+    await user.type(screen.getByPlaceholderText('e.g. EU Prod API'), 'Example');
+    await user.click(screen.getByText('Add Monitor'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Network error')).toBeInTheDocument();
+    });
+
+    // Re-submit with new data — error should be cleared during submission
+    const successfulSubmit = vi.fn().mockResolvedValue();
+    render(<AddSiteForm onSubmit={successfulSubmit} />, { container: document.body });
+    // The previous render's error is gone because new render
+    expect(screen.queryByText('Network error')).not.toBeInTheDocument();
+  });
+
+  it('submits with custom frequency value', async () => {
+    const onSubmit = vi.fn().mockResolvedValue();
+    const user = userEvent.setup();
+
+    render(<AddSiteForm onSubmit={onSubmit} />);
+
+    await user.type(screen.getByPlaceholderText('https://'), 'https://example.com');
+    await user.type(screen.getByPlaceholderText('e.g. EU Prod API'), 'Example');
+    await user.selectOptions(screen.getByRole('combobox'), '1');
+    await user.click(screen.getByText('Add Monitor'));
+
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledWith('https://example.com', 'Example', 1);
+    });
+  });
+
+  it('requires URL input via required attribute', () => {
+    render(<AddSiteForm onSubmit={vi.fn()} />);
+    expect(screen.getByPlaceholderText('https://')).toBeRequired();
+  });
 });

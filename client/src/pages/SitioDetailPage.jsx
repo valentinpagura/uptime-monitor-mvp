@@ -1,8 +1,9 @@
 import { useState, useEffect, useContext, useRef, useCallback, lazy, Suspense } from 'react';
 import { AuthContext } from '../contexts/AuthContext';
-import { getSitioStats } from '../services/api';
+import { getSitioDashboard } from '../services/api';
 import { StatCard } from '../components/StatCard';
 import { LatencyGauge } from '../components/LatencyGauge';
+import { RangeSelector } from '../components/RangeSelector';
 import { getStatus } from '../utils/status';
 import { formatLocalDateTime } from '../utils/formatLocalTime';
 import { usePolling } from '../hooks/usePolling';
@@ -48,10 +49,10 @@ function SkeletonBlocks() {
 
 export function SitioDetailPage({ sitioId, onBack }) {
   const { token } = useContext(AuthContext);
-  const [stats, setStats] = useState(null);
+  const [dashboard, setDashboard] = useState(null);
+  const [range, setRange] = useState('24h');
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
-  const sinDatos = stats && stats.totalChequeos === 0;
   const pageRef = useRef(null);
 
   const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -83,20 +84,29 @@ export function SitioDetailPage({ sitioId, onBack }) {
     });
   }
 
-  const cargarStats = useCallback(async () => {
+  const cargarDashboard = useCallback(async () => {
     try {
-      const data = await getSitioStats(sitioId, token);
-      setStats(data);
+      const data = await getSitioDashboard(sitioId, token, range);
+      setDashboard(data);
       setError(null);
     } catch (err) {
-      console.error('Error cargando stats:', err);
-      setError('Error cargando estadísticas');
+      console.error('Error cargando dashboard:', err);
+      setError('Error cargando dashboard');
     } finally {
       setCargando(false);
     }
-  }, [sitioId, token]);
+  }, [sitioId, token, range]);
 
-  usePolling(cargarStats, 10000);
+  const { refresh } = usePolling(cargarDashboard, 10000);
+
+  const handleRangeChange = useCallback((newRange) => {
+    setRange(newRange);
+    setCargando(true);
+  }, []);
+
+  useEffect(() => {
+    refresh();
+  }, [range]);
 
   if (cargando) {
     return <div ref={pageRef}><SkeletonBlocks /></div>;
@@ -106,43 +116,103 @@ export function SitioDetailPage({ sitioId, onBack }) {
     return (
       <div ref={pageRef} style={styles.container}>
         <div style={styles.errorBox}>
-          <span style={styles.errorIcon}>⚠️</span>
+          <span style={styles.errorIcon}>{'\u26A0\uFE0F'}</span>
           <p style={styles.errorText}>{error}</p>
           <button onClick={handleBack} style={styles.backBtn}>
-            ← Volver
+            {'\u2190'} Volver
           </button>
         </div>
       </div>
     );
   }
 
-  if (!stats || sinDatos) {
+  if (!dashboard || !dashboard.resumen) {
     return (
       <div ref={pageRef} style={styles.container}>
         <div style={styles.emptyBox}>
-          <span style={styles.emptyIcon}>📊</span>
+          <span style={styles.emptyIcon}>{'\uD83D\uDCCA'}</span>
           <p style={styles.emptyTitle}>Sin datos de monitoreo</p>
           <p style={styles.emptyDesc}>
             Este sitio se agregó recientemente. Los datos aparecerán después del próximo chequeo automático.
           </p>
           <button onClick={handleBack} style={styles.backBtn}>
-            ← Volver al Dashboard
+            {'\u2190'} Volver al Dashboard
           </button>
         </div>
       </div>
     );
   }
 
-  const sitioNombre = stats.sitio?.nombre || stats.sitio?.url || 'Sitio';
-  const sitioUrl = stats.sitio?.url || '';
-  const ultimoLog = stats.ultimoLog;
+  const totalGlobal = dashboard.totalGlobal ?? 0;
+  const totalChequeos = dashboard.resumen.totalChequeos ?? 0;
+  const isTrulyEmpty = totalChequeos === 0 && totalGlobal === 0;
+  const isRangeEmpty = totalChequeos === 0 && totalGlobal > 0;
+
+  if (isTrulyEmpty) {
+    return (
+      <div ref={pageRef} style={styles.container}>
+        <div style={styles.emptyBox}>
+          <span style={styles.emptyIcon}>{'\uD83D\uDCCA'}</span>
+          <p style={styles.emptyTitle}>Sin datos de monitoreo</p>
+          <p style={styles.emptyDesc}>
+            Este sitio se agregó recientemente. Los datos aparecerán después del próximo chequeo automático.
+          </p>
+          <button onClick={handleBack} style={styles.backBtn}>
+            {'\u2190'} Volver al Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (isRangeEmpty) {
+    return (
+      <div ref={pageRef} style={styles.container}>
+        <div style={styles.header}>
+          <button onClick={handleBack} style={styles.backBtn}>
+            {'\u2190'} Volver
+          </button>
+          <div style={{ minWidth: 0 }}>
+            <h1 style={styles.title}>{dashboard.sitio?.nombre || dashboard.sitio?.url || 'Sitio'}</h1>
+            <p style={styles.url}>{dashboard.sitio?.url || ''}</p>
+          </div>
+        </div>
+        <div style={styles.rangeRow}>
+          <RangeSelector activeRange={dashboard.range || range} onRangeChange={handleRangeChange} />
+        </div>
+        <div style={styles.emptyBox}>
+          <span style={styles.emptyIcon}>{'\uD83D\uDCCD'}</span>
+          <p style={styles.emptyTitle}>Sin datos en este rango</p>
+          <p style={styles.emptyDesc}>
+            Este sitio tiene {totalGlobal} chequeos registrados, pero ninguno en el rango {dashboard.range || range}. Probá con un rango mayor.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const sitioNombre = dashboard.sitio?.nombre || dashboard.sitio?.url || 'Sitio';
+  const sitioUrl = dashboard.sitio?.url || '';
+  const resumen = dashboard.resumen;
+  const timeline = dashboard.timeline || [];
+  const rangeInfo = dashboard.range || range;
+
+  const ultimoLog = timeline.length > 0
+    ? {
+        latencia_ms: timeline[timeline.length - 1].latencia_promedio,
+        is_online: timeline[timeline.length - 1].was_online,
+        created_at: timeline[timeline.length - 1].bucket,
+      }
+    : null;
   const status = getStatus(ultimoLog);
+
+  const ultimoLogTime = timeline.length > 0 ? timeline[timeline.length - 1].bucket : null;
 
   return (
     <div ref={pageRef} style={styles.container}>
       <div style={styles.header}>
         <button onClick={handleBack} style={styles.backBtn}>
-          ← Volver
+          {'\u2190'} Volver
         </button>
         <div style={{ minWidth: 0 }}>
           <h1 style={styles.title}>{sitioNombre}</h1>
@@ -152,6 +222,10 @@ export function SitioDetailPage({ sitioId, onBack }) {
           <span style={{ ...styles.statusDot, backgroundColor: status.dotColor }} />
           <span style={{ ...styles.statusText, color: status.color }}>{status.label}</span>
         </div>
+      </div>
+
+      <div style={styles.rangeRow}>
+        <RangeSelector activeRange={rangeInfo} onRangeChange={handleRangeChange} />
       </div>
 
       <div style={styles.cardsGrid}>
@@ -168,56 +242,62 @@ export function SitioDetailPage({ sitioId, onBack }) {
                   ? '#e7c365'
                   : '#ff6b6b'
           }
-          icon="⚡"
+          icon={'\u26A1'}
         />
         <StatCard
           title="Historical Average"
-          value={stats.latenciaPromedio}
+          value={resumen.latenciaPromedio}
           unit="ms"
           color="var(--auth-primary)"
-          icon="📊"
+          icon={'\uD83D\uDCCA'}
         />
         <StatCard
-          title="Latencia Mínima"
-          value={stats.latenciaMin}
+          title="Latencia M\u00EDnima"
+          value={resumen.latenciaMin}
           unit="ms"
           color="#4ade80"
-          icon="📉"
+          icon={'\uD83D\uDCC9'}
         />
         <StatCard
-          title="Latencia Máxima"
-          value={stats.latenciaMax}
+          title="Latencia M\u00E1xima"
+          value={resumen.latenciaMax}
           unit="ms"
           color="#ff6b6b"
-          icon="📈"
+          icon={'\uD83D\uDCC8'}
         />
         <StatCard
           title="Uptime"
-          value={stats.uptime}
+          value={resumen.uptime}
           unit="%"
-          color={(stats.uptime ?? 0) >= 95 ? '#4ade80' : '#e7c365'}
-          icon="✅"
+          color={(resumen.uptime ?? 0) >= 95 ? '#4ade80' : '#e7c365'}
+          icon={'\u2705'}
         />
       </div>
 
       <div style={styles.gaugeContainer}>
-        <LatencyGauge latencia={ultimoLog?.latencia_ms ?? null} max={500} />
+        <LatencyGauge
+          latencia={ultimoLog?.latencia_ms ?? null}
+          maxLatencia={resumen.latenciaMax}
+        />
       </div>
 
       <Suspense fallback={<div className="db-skeleton" style={{ ...styles.chartSkeleton, height: '260px', padding: '20px' }} />}>
-        {stats.logs && stats.logs.length > 0 && (
-          <LatencyChart logs={stats.logs} />
+        {timeline.length > 0 && (
+          <LatencyChart timeline={timeline} range={rangeInfo} />
         )}
       </Suspense>
 
       <div style={styles.infoBox}>
         <p style={styles.infoText}>
-          <strong>Total de chequeos:</strong> {stats.totalChequeos}
+          <strong>Total de chequeos:</strong> {resumen.totalChequeos}
         </p>
-        {ultimoLog && (
+        <p style={styles.infoText}>
+          <strong>Rango:</strong> {rangeInfo}
+        </p>
+        {ultimoLogTime && (
           <p style={styles.infoText}>
-            <strong>Último chequeo:</strong>{' '}
-            {formatLocalDateTime(ultimoLog.created_at)}
+            <strong>\u00DAltimo chequeo:</strong>{' '}
+            {formatLocalDateTime(ultimoLogTime)}
           </p>
         )}
       </div>
@@ -239,7 +319,12 @@ const styles = {
     border: '1px solid var(--db-border-card)',
     padding: '20px',
     borderRadius: '8px',
-    marginBottom: '20px',
+    marginBottom: '12px',
+  },
+  rangeRow: {
+    display: 'flex',
+    justifyContent: 'flex-end',
+    marginBottom: '16px',
   },
   backBtn: {
     padding: '8px 20px',

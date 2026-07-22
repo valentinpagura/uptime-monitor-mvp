@@ -17,7 +17,7 @@ describe('LatencyGauge', () => {
 
   it('shows em dash when latencia is null', () => {
     render(<LatencyGauge latencia={null} />);
-    expect(screen.getByText('—')).toBeInTheDocument();
+    expect(screen.getByText('\u2014')).toBeInTheDocument();
   });
 
   it('does not show ms unit when latencia is null', () => {
@@ -25,16 +25,20 @@ describe('LatencyGauge', () => {
     expect(screen.queryByText('ms')).not.toBeInTheDocument();
   });
 
-  it('renders with custom max value', () => {
-    const { container } = render(<LatencyGauge latencia={300} max={1000} />);
-    const text1000 = container.querySelector('text');
-    expect(text1000).toBeInTheDocument();
+  it('uses dynamic max when maxLatencia is provided', () => {
+    const { container } = render(<LatencyGauge latencia={100} maxLatencia={800} />);
+    const texts = container.querySelectorAll('text');
+    const textContents = Array.from(texts).map((t) => t.textContent);
+    expect(textContents).toContain('520');
+    expect(textContents).toContain('1040');
   });
 
-  it('clamps arc when latencia exceeds max', () => {
-    const { container } = render(<LatencyGauge latencia={1000} max={500} />);
-    const paths = container.querySelectorAll('path');
-    expect(paths.length).toBe(2);
+  it('uses default max of 500 when no maxLatencia', () => {
+    const { container } = render(<LatencyGauge latencia={300} />);
+    const texts = container.querySelectorAll('text');
+    const textContents = Array.from(texts).map((t) => t.textContent);
+    expect(textContents).toContain('250');
+    expect(textContents).toContain('500');
   });
 
   it('shows green color for latency under 200ms', () => {
@@ -61,6 +65,17 @@ describe('LatencyGauge', () => {
     expect(valueEl).toHaveStyle('color: var(--db-outline-variant)');
   });
 
+  it('treats NaN as no data (gray, no ms unit)', () => {
+    render(<LatencyGauge latencia={NaN} />);
+    expect(screen.getByText('\u2014')).toBeInTheDocument();
+    expect(screen.queryByText('ms')).not.toBeInTheDocument();
+  });
+
+  it('treats undefined as no data', () => {
+    render(<LatencyGauge latencia={undefined} />);
+    expect(screen.getByText('\u2014')).toBeInTheDocument();
+  });
+
   it('applies magic-glow-card class', () => {
     const { container } = render(<LatencyGauge latencia={100} />);
     const div = container.firstChild;
@@ -68,11 +83,21 @@ describe('LatencyGauge', () => {
   });
 
   it('renders scale labels 0, half, and max', () => {
-    const { container } = render(<LatencyGauge latencia={100} max={500} />);
+    const { container } = render(<LatencyGauge latencia={100} maxLatencia={500} />);
     const texts = container.querySelectorAll('text');
     const textContents = Array.from(texts).map((t) => t.textContent);
     expect(textContents).toContain('0');
-    expect(textContents).toContain('250');
-    expect(textContents).toContain('500');
+    expect(textContents).toContain('325');
+    expect(textContents).toContain('650');
+  });
+
+  it('renders header with "Latencia Actual" label', () => {
+    render(<LatencyGauge latencia={100} />);
+    expect(screen.getByText('Latencia Actual')).toBeInTheDocument();
+  });
+
+  it('renders max latency hint when maxLatencia provided', () => {
+    render(<LatencyGauge latencia={100} maxLatencia={500} />);
+    expect(screen.getByText('Máx: 500 ms')).toBeInTheDocument();
   });
 });

@@ -36,4 +36,16 @@ describe('StatCard', () => {
     );
     expect(screen.getByText('500')).toHaveStyle('color: #ff6b6b');
   });
+
+  it('renders without icon when icon prop is undefined', () => {
+    render(<StatCard title="No Icon" value={100} unit="ms" color="#fff" />);
+    expect(screen.getByText('No Icon')).toBeInTheDocument();
+    expect(screen.getByText('100')).toBeInTheDocument();
+  });
+
+  it('renders correctly with zero value', () => {
+    render(<StatCard title="Zero" value={0} unit="ms" color="#4ade80" icon="⚡" />);
+    expect(screen.getByText('Zero')).toBeInTheDocument();
+    expect(screen.getByText('0')).toBeInTheDocument();
+  });
 });

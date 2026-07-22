@@ -139,4 +139,73 @@ describe('DashboardPage', () => {
       expect(screen.getByText(/Monitoring 2 active endpoints?/i)).toBeInTheDocument();
     });
   });
+
+  it('opens ConfirmModal when delete button is clicked in context menu', async () => {
+    api.getSitios.mockResolvedValue({ sitios: mockSitios });
+    api.getLogs
+      .mockResolvedValueOnce({ logs: mockLogs1 })
+      .mockResolvedValueOnce({ logs: mockLogs2 });
+
+    renderDashboard();
+
+    await waitFor(() => {
+      expect(screen.getByText('Google')).toBeInTheDocument();
+    });
+
+    const menuBtn = document.querySelector('.db-row-menu-btn');
+    fireEvent.click(menuBtn);
+    const deleteBtn = screen.getByText((c, el) => el.tagName === 'BUTTON' && c.includes('Eliminar'));
+    fireEvent.click(deleteBtn);
+
+    expect(screen.getByText('Delete Monitor')).toBeInTheDocument();
+    expect(screen.getByText('Are you sure you want to delete this monitor? This action cannot be undone.')).toBeInTheDocument();
+  });
+
+  it('deletes site when ConfirmModal confirm is clicked', async () => {
+    api.getSitios.mockResolvedValue({ sitios: mockSitios });
+    api.getLogs
+      .mockResolvedValueOnce({ logs: mockLogs1 })
+      .mockResolvedValueOnce({ logs: mockLogs2 });
+    api.deleteSitio.mockResolvedValue({});
+
+    renderDashboard();
+
+    await waitFor(() => {
+      expect(screen.getByText('Google')).toBeInTheDocument();
+    });
+
+    const menuBtn = document.querySelector('.db-row-menu-btn');
+    fireEvent.click(menuBtn);
+    fireEvent.click(screen.getByText((c, el) => el.tagName === 'BUTTON' && c.includes('Eliminar')));
+
+    fireEvent.click(screen.getByText('Delete'));
+
+    await waitFor(() => {
+      expect(api.deleteSitio).toHaveBeenCalledWith(1, 'fake-token');
+    });
+  });
+
+  it('cancels delete when ConfirmModal cancel is clicked', async () => {
+    api.getSitios.mockResolvedValue({ sitios: mockSitios });
+    api.getLogs
+      .mockResolvedValueOnce({ logs: mockLogs1 })
+      .mockResolvedValueOnce({ logs: mockLogs2 });
+
+    renderDashboard();
+
+    await waitFor(() => {
+      expect(screen.getByText('Google')).toBeInTheDocument();
+    });
+
+    const menuBtn = document.querySelector('.db-row-menu-btn');
+    fireEvent.click(menuBtn);
+    fireEvent.click(screen.getByText((c, el) => el.tagName === 'BUTTON' && c.includes('Eliminar')));
+
+    fireEvent.click(screen.getByText('Cancel'));
+
+    await waitFor(() => {
+      expect(screen.queryByText('Delete Monitor')).not.toBeInTheDocument();
+    });
+  });
+
 });

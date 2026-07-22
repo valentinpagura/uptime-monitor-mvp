@@ -1,49 +1,199 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { LatencyChart } from '../../components/LatencyChart';
 
-const sampleLogs = [
-  { id: 1, sitio_id: 1, latencia_ms: 120, is_online: true, status_code: 200, created_at: '2026-07-02T12:00:00Z' },
-  { id: 2, sitio_id: 1, latencia_ms: 150, is_online: true, status_code: 200, created_at: '2026-07-02T12:05:00Z' },
-  { id: 3, sitio_id: 1, latencia_ms: null, is_online: false, status_code: null, created_at: '2026-07-02T12:10:00Z' },
-  { id: 4, sitio_id: 1, latencia_ms: 200, is_online: true, status_code: 200, created_at: '2026-07-02T12:15:00Z' },
-  { id: 5, sitio_id: 1, latencia_ms: 90, is_online: true, status_code: 200, created_at: '2026-07-02T12:20:00Z' },
-];
+const mockLine = vi.hoisted(() => vi.fn(() => <div data-testid="mock-chart" />));
+vi.mock('react-chartjs-2', () => ({
+  Line: mockLine,
+}));
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+function makeBucket(latencia_promedio, was_online, bucket, latencia_min, latencia_max) {
+  return { latencia_promedio, was_online, bucket, latencia_min, latencia_max, checks: 1 };
+}
 
 describe('LatencyChart', () => {
-  it('renders the chart title', () => {
-    render(<LatencyChart logs={sampleLogs} />);
-    expect(screen.getByText('Histórico de Latencia')).toBeInTheDocument();
+  it('returns null when timeline is empty', () => {
+    const { container } = render(<LatencyChart timeline={[]} range="24h" />);
+    expect(container.innerHTML).toBe('');
   });
 
-  it('renders the chart canvas via Line component', () => {
-    const { container } = render(<LatencyChart logs={sampleLogs} />);
-    const canvas = container.querySelector('canvas');
-    expect(canvas).toBeInTheDocument();
+  it('returns null when timeline is undefined', () => {
+    const { container } = render(<LatencyChart timeline={undefined} range="24h" />);
+    expect(container.innerHTML).toBe('');
   });
 
-  it('renders nothing with empty logs array', () => {
-    const { container } = render(<LatencyChart logs={[]} />);
-    expect(container.firstChild).toBeNull();
-  });
+  it('shows waiting message when timeline has exactly 1 point', () => {
+    render(
+      <LatencyChart
+        timeline={[makeBucket(150, true, '2026-07-22T10:00:00Z')]}
+        range="24h"
+      />,
+    );
 
-  it('renders a first-data message with a single log entry (no canvas)', () => {
-    const singleLog = [sampleLogs[0]];
-    const { container } = render(<LatencyChart logs={singleLog} />);
-    const canvas = container.querySelector('canvas');
-    expect(canvas).toBeNull();
     expect(screen.getByText('Esperando más datos para mostrar el gráfico.')).toBeInTheDocument();
+    expect(screen.getByText('150 ms')).toBeInTheDocument();
   });
 
-  it('reverses logs so most recent is last', () => {
-    const { container } = render(<LatencyChart logs={sampleLogs} />);
-    const canvas = container.querySelector('canvas');
-    expect(canvas).toBeInTheDocument();
+  it('shows "Sin respuesta" when single point is offline', () => {
+    render(
+      <LatencyChart
+        timeline={[makeBucket(null, false, '2026-07-22T10:00:00Z')]}
+        range="24h"
+      />,
+    );
+
+    expect(screen.getByText('Sin respuesta')).toBeInTheDocument();
   });
 
-  it('renders the chart container with dark theme card styles', () => {
-    const { container } = render(<LatencyChart logs={sampleLogs} />);
-    const outer = container.firstChild;
-    expect(outer).toHaveStyle('background-color: var(--db-bg-card)');
+  it('renders chart title and reset button when 2+ points exist', () => {
+    render(
+      <LatencyChart
+        timeline={[
+          makeBucket(100, true, '2026-07-22T10:00:00Z'),
+          makeBucket(200, true, '2026-07-22T11:00:00Z'),
+        ]}
+        range="24h"
+      />,
+    );
+
+    expect(screen.getByText('Histórico de Latencia')).toBeInTheDocument();
+    expect(screen.getByText('Reset Zoom')).toBeInTheDocument();
   });
+
+  it('passes data with x as Date and y as latency to Line (2+ points)', () => {
+    render(
+      <LatencyChart
+        timeline={[
+          makeBucket(150, true, '2026-07-22T10:00:00Z'),
+          makeBucket(200, true, '2026-07-22T11:00:00Z'),
+        ]}
+        range="24h"
+      />,
+    );
+
+    const lastCall = mockLine.mock.calls[mockLine.mock.calls.length - 1][0];
+    const data = lastCall.data.datasets[0].data;
+    expect(data).toHaveLength(2);
+    expect(data[0].x).toBeInstanceOf(Date);
+    expect(data[0].y).toBe(150);
+    expect(data[1].y).toBe(200);
+  });
+
+  it('sets y to null for offline points (2+ points)', () => {
+    render(
+      <LatencyChart
+        timeline={[
+          makeBucket(300, false, '2026-07-22T10:00:00Z'),
+          makeBucket(100, true, '2026-07-22T11:00:00Z'),
+        ]}
+        range="24h"
+      />,
+    );
+
+    const lastCall = mockLine.mock.calls[mockLine.mock.calls.length - 1][0];
+    expect(lastCall.data.datasets[0].data[0].y).toBeNull();
+    expect(lastCall.data.datasets[0].data[1].y).toBe(100);
+  });
+
+  it('sets spanGaps to false', () => {
+    render(
+      <LatencyChart
+        timeline={[makeBucket(100, true, '2026-07-22T10:00:00Z')]}
+        range="24h"
+      />,
+    );
+
+    const lastCall = mockLine.mock.calls[mockLine.mock.calls.length - 1][0];
+    expect(lastCall.data.datasets[0].spanGaps).toBe(false);
+  });
+
+  it('uses TimeScale for x axis', () => {
+    render(
+      <LatencyChart
+        timeline={[makeBucket(100, true, '2026-07-22T10:00:00Z')]}
+        range="24h"
+      />,
+    );
+
+    const lastCall = mockLine.mock.calls[mockLine.mock.calls.length - 1][0];
+    expect(lastCall.options.scales.x.type).toBe('time');
+  });
+
+  it('renders range hint with bucket count', () => {
+    render(
+      <LatencyChart
+        timeline={[
+          makeBucket(100, true, '2026-07-22T10:00:00Z'),
+          makeBucket(200, true, '2026-07-22T11:00:00Z'),
+        ]}
+        range="24h"
+      />,
+    );
+
+    expect(screen.getByText(/Rango: 24h/)).toBeInTheDocument();
+    expect(screen.getByText(/2 buckets/)).toBeInTheDocument();
+  });
+
+  it('tooltip shows full datetime on title callback', () => {
+    render(
+      <LatencyChart
+        timeline={[makeBucket(150, true, '2026-07-22T10:00:00Z')]}
+        range="24h"
+      />,
+    );
+
+    const lastCall = mockLine.mock.calls[mockLine.mock.calls.length - 1][0];
+    const tooltip = lastCall.options.plugins.tooltip;
+    const title = tooltip.callbacks.title([{ raw: { x: new Date('2026-07-22T10:00:00Z') } }]);
+    expect(title).toContain('22/07/2026');
+  });
+
+  it('tooltip shows "Online · N ms" for valid data', () => {
+    render(
+      <LatencyChart
+        timeline={[makeBucket(250, true, '2026-07-22T10:00:00Z')]}
+        range="24h"
+      />,
+    );
+
+    const lastCall = mockLine.mock.calls[mockLine.mock.calls.length - 1][0];
+    const tooltip = lastCall.options.plugins.tooltip;
+    const label = tooltip.callbacks.label({ raw: { y: 250 } });
+    expect(label).toContain('Online');
+    expect(label).toContain('250 ms');
+  });
+
+  it('tooltip shows "Offline — Sin respuesta" for null data', () => {
+    render(
+      <LatencyChart
+        timeline={[makeBucket(null, false, '2026-07-22T10:00:00Z')]}
+        range="24h"
+      />,
+    );
+
+    const lastCall = mockLine.mock.calls[mockLine.mock.calls.length - 1][0];
+    const tooltip = lastCall.options.plugins.tooltip;
+    const label = tooltip.callbacks.label({ raw: { y: null } });
+    expect(label).toContain('Offline');
+    expect(label).toContain('Sin respuesta');
+  });
+
+  it('enables zoom plugin with pan and wheel zoom', () => {
+    render(
+      <LatencyChart
+        timeline={[makeBucket(100, true, '2026-07-22T10:00:00Z')]}
+        range="24h"
+      />,
+    );
+
+    const lastCall = mockLine.mock.calls[mockLine.mock.calls.length - 1][0];
+    const zoom = lastCall.options.plugins.zoom;
+    expect(zoom.pan.enabled).toBe(true);
+    expect(zoom.zoom.wheel.enabled).toBe(true);
+  });
+
 });

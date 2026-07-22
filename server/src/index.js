@@ -29,6 +29,7 @@ const createTables = async () => {
         is_online BOOLEAN,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+      CREATE INDEX IF NOT EXISTS idx_logs_sitio_created ON logs (sitio_id, created_at DESC);
     `);
     console.log('Tablas creadas o ya existen');
   } catch (err) {

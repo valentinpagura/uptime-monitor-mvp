@@ -1,6 +1,7 @@
 const express = require('express');
 const { validate } = require('../middleware/validate');
 const { createSitioSchema, idParamSchema } = require('../utils/validate');
+const { RANGE_MAP, getBucketInterval, validateRange } = require('../utils/range');
 
 function createSitiosRouter(pool) {
   const router = express.Router();
@@ -79,9 +80,113 @@ function createSitiosRouter(pool) {
     }
   });
 
+  router.get('/:id/dashboard', validate(idParamSchema, 'params'), async (req, res) => {
+    const sitioId = req.params.id;
+    const usuario_id = req.user.id;
+    const range = req.query.range || '24h';
+
+    const rangeConfig = validateRange(range);
+    if (!rangeConfig) {
+      return res.status(400).json({
+        message: `Rango inválido. Valores aceptados: ${Object.keys(RANGE_MAP).join(', ')}`,
+      });
+    }
+
+    try {
+      const sitioResult = await pool.query(
+        'SELECT id, url, nombre FROM sitios WHERE id = $1 AND usuario_id = $2',
+        [sitioId, usuario_id]
+      );
+
+      if (sitioResult.rows.length === 0) {
+        return res.status(404).json({ message: 'Sitio no encontrado' });
+      }
+
+      const sitio = sitioResult.rows[0];
+      const bucket = rangeConfig.bucket;
+      const interval = rangeConfig.interval;
+
+      const [aggResult, globalResult, timelineResult] = await Promise.all([
+        pool.query(
+          `SELECT
+            COUNT(*)::int AS total_chequeos,
+            COUNT(*) FILTER (WHERE is_online = true)::int AS online_count,
+            ROUND(AVG(latencia_ms) FILTER (WHERE latencia_ms IS NOT NULL))::int AS latencia_promedio,
+            MIN(latencia_ms) FILTER (WHERE latencia_ms IS NOT NULL)::int AS latencia_min,
+            MAX(latencia_ms) FILTER (WHERE latencia_ms IS NOT NULL)::int AS latencia_max
+          FROM logs
+          WHERE sitio_id = $1
+            AND ($2::interval IS NULL OR created_at >= NOW() - $2::interval)`,
+          [sitioId, interval]
+        ),
+        pool.query(
+          'SELECT COUNT(*)::int AS total_global FROM logs WHERE sitio_id = $1',
+          [sitioId]
+        ),
+        pool.query(
+          `SELECT
+            date_trunc($3::text, created_at) AS bucket,
+            ROUND(AVG(latencia_ms) FILTER (WHERE latencia_ms IS NOT NULL))::int AS latencia_promedio,
+            MIN(latencia_ms) FILTER (WHERE latencia_ms IS NOT NULL)::int AS latencia_min,
+            MAX(latencia_ms) FILTER (WHERE latencia_ms IS NOT NULL)::int AS latencia_max,
+            COUNT(*)::int AS checks,
+            bool_or(is_online) AS was_online
+          FROM logs
+          WHERE sitio_id = $1
+            AND ($2::interval IS NULL OR created_at >= NOW() - $2::interval)
+          GROUP BY bucket
+          ORDER BY bucket ASC`,
+          [sitioId, interval, bucket]
+        ),
+      ]);
+
+      const agg = aggResult.rows[0];
+      const totalGlobal = globalResult.rows[0].total_global;
+      const totalChequeos = agg.total_chequeos;
+
+      if (totalChequeos === 0) {
+        return res.json({
+          message: 'Sin datos de monitoreo en el rango seleccionado',
+          sitio: { id: sitio.id, url: sitio.url, nombre: sitio.nombre },
+          range,
+          totalGlobal,
+          resumen: {
+            latenciaPromedio: null,
+            latenciaMin: null,
+            latenciaMax: null,
+            uptime: null,
+            totalChequeos: 0,
+          },
+          timeline: [],
+        });
+      }
+
+      const uptime = Math.round((agg.online_count / totalChequeos) * 100);
+
+      res.json({
+        message: 'Dashboard data obtained',
+        sitio: { id: sitio.id, url: sitio.url, nombre: sitio.nombre },
+        range,
+        totalGlobal,
+        resumen: {
+          latenciaPromedio: agg.latencia_promedio,
+          latenciaMin: agg.latencia_min,
+          latenciaMax: agg.latencia_max,
+          uptime,
+          totalChequeos,
+        },
+        timeline: timelineResult.rows,
+      });
+    } catch (err) {
+      console.error('Error obteniendo dashboard:', err);
+      res.status(500).json({ message: 'Error obteniendo dashboard' });
+    }
+  });
+
   router.get('/:id/logs', validate(idParamSchema, 'params'), async (req, res) => {
     const sitioId = req.params.id;
     const usuario_id = req.user.id;
+    const range = req.query.range;
 
     try {
       const sitioResult = await pool.query(
@@ -93,6 +198,32 @@ function createSitiosRouter(pool) {
         return res
           .status(404)
           .json({ message: 'Sitio no encontrado o no pertenece al usuario' });
+      }
+
+      if (range) {
+        const rangeConfig = RANGE_MAP[range];
+        if (!rangeConfig) {
+          return res.status(400).json({
+            message: `Rango inválido. Valores aceptados: ${Object.keys(RANGE_MAP).join(', ')}`,
+          });
+        }
+
+        let query, params;
+        if (rangeConfig.interval) {
+          query = 'SELECT * FROM logs WHERE sitio_id = $1 AND created_at >= NOW() - $2::interval ORDER BY created_at DESC';
+          params = [sitioId, rangeConfig.interval];
+        } else {
+          query = 'SELECT * FROM logs WHERE sitio_id = $1 ORDER BY created_at DESC';
+          params = [sitioId];
+        }
+
+        const logsResult = await pool.query(query, params);
+
+        return res.json({
+          message: 'Logs obtenidos exitosamente',
+          logs: logsResult.rows,
+          range,
+        });
       }
 
       const logsResult = await pool.query(

@@ -189,4 +189,68 @@ describe('ConfirmModal', () => {
 
     expect(screen.getByText('❓')).toBeInTheDocument();
   });
+
+  it('restores body overflow on unmount while open', () => {
+    const { unmount } = render(
+      <ConfirmModal isOpen={true} onConfirm={vi.fn()} onCancel={vi.fn()} />,
+    );
+    expect(document.body.style.overflow).toBe('hidden');
+    unmount();
+    expect(document.body.style.overflow).toBe('');
+  });
+
+  it('restores focus to previous element on close', () => {
+    const button = document.createElement('button');
+    button.textContent = 'Open Modal';
+    document.body.appendChild(button);
+    button.focus();
+    const prev = document.activeElement;
+
+    const { rerender } = render(
+      <ConfirmModal isOpen={true} onConfirm={vi.fn()} onCancel={vi.fn()} />,
+    );
+
+    rerender(
+      <ConfirmModal isOpen={false} onConfirm={vi.fn()} onCancel={vi.fn()} />,
+    );
+
+    expect(document.activeElement).toBe(prev);
+    document.body.removeChild(button);
+  });
+
+  it('focuses confirm button on open', () => {
+    render(
+      <ConfirmModal isOpen={true} onConfirm={vi.fn()} onCancel={vi.fn()} />,
+    );
+    const deleteBtn = screen.getByText('Delete');
+    expect(document.activeElement).toBe(deleteBtn);
+  });
+
+  it('does not trap focus if modal is closed', () => {
+    const onCancel = vi.fn();
+    render(
+      <ConfirmModal isOpen={false} onConfirm={vi.fn()} onCancel={onCancel} />,
+    );
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(onCancel).not.toHaveBeenCalled();
+  });
+
+  it('uses danger variant for confirm button aria-label', () => {
+    render(
+      <ConfirmModal isOpen={true} onConfirm={vi.fn()} onCancel={vi.fn()} />,
+    );
+    expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument();
+  });
+
+  it('uses custom confirm aria-label when provided', () => {
+    render(
+      <ConfirmModal
+        isOpen={true}
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+        confirmLabel="Remove"
+      />,
+    );
+    expect(screen.getByRole('button', { name: 'Remove' })).toBeInTheDocument();
+  });
 });

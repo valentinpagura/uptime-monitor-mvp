@@ -94,8 +94,23 @@ export async function deleteSitio(sitioId, token) {
 }
 
 // GET /sitios/:id/logs
-export async function getLogs(sitioId, token) {
-  const response = await fetch(`${API_BASE_URL}/sitios/${sitioId}/logs`, {
+export async function getLogs(sitioId, token, range) {
+  const url = range
+    ? `${API_BASE_URL}/sitios/${sitioId}/logs?range=${encodeURIComponent(range)}`
+    : `${API_BASE_URL}/sitios/${sitioId}/logs`;
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  const data = await response.json();
+  return data;
+}
+
+// GET /sitios/:id/dashboard - Dashboard con timeline bucketed y resumen agregado
+export async function getSitioDashboard(sitioId, token, range = '24h') {
+  const response = await fetch(`${API_BASE_URL}/sitios/${sitioId}/dashboard?range=${encodeURIComponent(range)}`, {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${token}`
