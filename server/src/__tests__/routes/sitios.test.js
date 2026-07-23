@@ -506,3 +506,136 @@ describe('GET /sitios/:id/stats', () => {
     expect(res.status).toBe(400);
   });
 });
+
+describe('GET /sitios/summary', () => {
+  let mockPool;
+  let app;
+
+  beforeEach(() => {
+    mockPool = createMockPool();
+    app = createApp(mockPool);
+  });
+
+  it('returns summary with aggregated data across all sites', async () => {
+    mockPool.query
+      .mockResolvedValueOnce({
+        rows: [
+          { id: 1, url: 'https://site1.com', nombre: 'Site 1', total_chequeos: 100, online_chequeos: 99, avg_latencia: 120, min_latencia: 50, max_latencia: 300 },
+          { id: 2, url: 'https://site2.com', nombre: 'Site 2', total_chequeos: 50, online_chequeos: 50, avg_latencia: 350, min_latencia: 100, max_latencia: 600 },
+          { id: 3, url: 'https://site3.com', nombre: null, total_chequeos: 0, online_chequeos: 0, avg_latencia: null, min_latencia: null, max_latencia: null },
+        ],
+      })
+      .mockResolvedValueOnce({ rows: [{ total_chequeos: 0, avg_latencia: null, online_count: 0 }] });
+
+    const res = await request(app)
+      .get('/sitios/summary?range=24h')
+      .set('Authorization', `Bearer ${makeToken()}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('range', '24h');
+    expect(res.body).toHaveProperty('totalSitios', 3);
+    expect(res.body.totalChequeos).toBe(150);
+    expect(res.body.resumen).toMatchObject({
+      passing: 1,
+      warning: 1,
+      slow: 0,
+      down: 0,
+      sinDatos: 1,
+    });
+    expect(res.body.sitios).toHaveLength(3);
+    expect(res.body.sitios[0].clasificacion).toBe('passing');
+    expect(res.body.sitios[1].clasificacion).toBe('warning');
+    expect(res.body.sitios[2].clasificacion).toBe('sin_datos');
+  });
+
+  it('uses default range=24h when no range param', async () => {
+    mockPool.query
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ total_chequeos: 0, avg_latencia: null, online_count: 0 }] });
+
+    const res = await request(app)
+      .get('/sitios/summary')
+      .set('Authorization', `Bearer ${makeToken()}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.range).toBe('24h');
+    expect(res.body.totalSitios).toBe(0);
+  });
+
+  it('returns 400 for invalid range value', async () => {
+    const res = await request(app)
+      .get('/sitios/summary?range=invalid')
+      .set('Authorization', `Bearer ${makeToken()}`);
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toContain('Rango inválido');
+  });
+
+  it('returns site list with per-site uptime and clasificacion', async () => {
+    mockPool.query
+      .mockResolvedValueOnce({
+        rows: [
+          { id: 1, url: 'https://good.com', nombre: 'Good', total_chequeos: 100, online_chequeos: 100, avg_latencia: 50, min_latencia: 10, max_latencia: 150 },
+          { id: 2, url: 'https://slow.com', nombre: 'Slow', total_chequeos: 100, online_chequeos: 100, avg_latencia: 500, min_latencia: 200, max_latencia: 900 },
+          { id: 3, url: 'https://down.com', nombre: 'Down', total_chequeos: 100, online_chequeos: 80, avg_latencia: 150, min_latencia: 50, max_latencia: 300 },
+        ],
+      })
+      .mockResolvedValueOnce({ rows: [{ total_chequeos: 0, avg_latencia: null, online_count: 0 }] });
+
+    const res = await request(app)
+      .get('/sitios/summary?range=7d')
+      .set('Authorization', `Bearer ${makeToken()}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.sitios[0]).toMatchObject({ id: 1, clasificacion: 'passing', uptime: 100, avgLatencia: 50 });
+    expect(res.body.sitios[1]).toMatchObject({ id: 2, clasificacion: 'slow', uptime: 100, avgLatencia: 500 });
+    expect(res.body.sitios[2]).toMatchObject({ id: 3, clasificacion: 'down', uptime: 80, avgLatencia: 150 });
+    expect(res.body.resumen.passing).toBe(1);
+    expect(res.body.resumen.slow).toBe(1);
+    expect(res.body.resumen.down).toBe(1);
+  });
+
+  it('computes global averages correctly', async () => {
+    mockPool.query
+      .mockResolvedValueOnce({
+        rows: [
+          { id: 1, url: 'https://a.com', nombre: 'A', total_chequeos: 100, online_chequeos: 95, avg_latencia: 100, min_latencia: 10, max_latencia: 200 },
+          { id: 2, url: 'https://b.com', nombre: 'B', total_chequeos: 200, online_chequeos: 180, avg_latencia: 200, min_latencia: 50, max_latencia: 500 },
+        ],
+      })
+      .mockResolvedValueOnce({ rows: [{ total_chequeos: 0, avg_latencia: null, online_count: 0 }] });
+
+    const res = await request(app)
+      .get('/sitios/summary?range=24h')
+      .set('Authorization', `Bearer ${makeToken()}`);
+
+    expect(res.body.resumen.promedioGlobal).toBe(150);
+    expect(res.body.resumen.uptimeGlobal).toBe(92);
+    expect(res.body.resumen.minLatencia).toBe(10);
+    expect(res.body.resumen.maxLatencia).toBe(500);
+  });
+
+  it('rejects request without token', async () => {
+    const res = await request(app).get('/sitios/summary');
+    expect(res.status).toBe(401);
+  });
+
+  it('returns sin_datos for sites with no logs', async () => {
+    mockPool.query
+      .mockResolvedValueOnce({
+        rows: [
+          { id: 1, url: 'https://new.com', nombre: null, total_chequeos: 0, online_chequeos: 0, avg_latencia: null, min_latencia: null, max_latencia: null },
+        ],
+      })
+      .mockResolvedValueOnce({ rows: [{ total_chequeos: 0, avg_latencia: null, online_count: 0 }] });
+
+    const res = await request(app)
+      .get('/sitios/summary')
+      .set('Authorization', `Bearer ${makeToken()}`);
+
+    expect(res.body.sitios[0].clasificacion).toBe('sin_datos');
+    expect(res.body.sitios[0].uptime).toBeNull();
+    expect(res.body.sitios[0].avgLatencia).toBeNull();
+    expect(res.body.resumen.sinDatos).toBe(1);
+  });
+});

@@ -120,6 +120,18 @@ export async function getSitioDashboard(sitioId, token, range = '24h') {
   return data;
 }
 
+// GET /sitios/summary - Obtener resumen global de todos los sitios del usuario
+export async function getDashboardSummary(token, range = '24h') {
+  const response = await fetch(`${API_BASE_URL}/sitios/summary?range=${encodeURIComponent(range)}`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  const data = await response.json();
+  return data;
+}
+
 // GET /sitios/:id/stats - Obtener estadísticas de un sitio específico
 export async function getSitioStats(sitioId, token) {
   const response = await fetch(`${API_BASE_URL}/sitios/${sitioId}/stats`, {

@@ -7,6 +7,7 @@ import {
   deleteSitio,
   getLogs,
   getSitioDashboard,
+  getDashboardSummary,
   getSitioStats,
 } from '../../services/api';
 
@@ -293,6 +294,50 @@ describe('api', () => {
       globalThis.fetch = mockFetchNetworkError();
 
       await expect(getSitioStats(3, 'token')).rejects.toThrow('Network error');
+    });
+  });
+
+  describe('getDashboardSummary', () => {
+    it('sends GET to /sitios/summary with default range=24h', async () => {
+      globalThis.fetch = mockFetchResponse({ totalSitios: 5, resumen: { passing: 3, warning: 1, slow: 1 } });
+
+      const result = await getDashboardSummary('my-token');
+
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        'http://localhost:5000/sitios/summary?range=24h',
+        expect.objectContaining({
+          method: 'GET',
+          headers: { 'Authorization': 'Bearer my-token' },
+        }),
+      );
+      expect(result.totalSitios).toBe(5);
+    });
+
+    it('sends custom range parameter', async () => {
+      globalThis.fetch = mockFetchResponse({ range: '7d' });
+
+      const result = await getDashboardSummary('token', '7d');
+
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        'http://localhost:5000/sitios/summary?range=7d',
+        expect.anything(),
+      );
+      expect(result.range).toBe('7d');
+    });
+
+    it('url-encodes the range parameter', async () => {
+      globalThis.fetch = mockFetchResponse({});
+
+      await getDashboardSummary('token', '24h');
+
+      const url = globalThis.fetch.mock.calls[0][0];
+      expect(url).toContain('range=24h');
+    });
+
+    it('propagates network errors', async () => {
+      globalThis.fetch = mockFetchNetworkError();
+
+      await expect(getDashboardSummary('token')).rejects.toThrow('Network error');
     });
   });
 

@@ -124,6 +124,7 @@ created_at  TIMESTAMP DEFAULT NOW()
 |--------|----------|-------------|-----------|
 | POST | /sitios | {url, nombre?, frecuencia_minutos?} | {sitio} |
 | GET | /sitios | — | {sitios: [...]} |
+| GET | /sitios/summary | ?range=24h | {range, totalSitios, totalChequeos, resumen, tendencias, sitios} |
 | DELETE | /sitios/:id | — | {sitio} |
 | GET | /sitios/:id/logs | — | {logs: [...]} últimos 10 |
 | GET | /sitios/:id/stats | — | {latenciaPromedio, latenciaMin, latenciaMax, uptime, ultimoLog, logs, totalChequeos} |
@@ -141,15 +142,15 @@ created_at  TIMESTAMP DEFAULT NOW()
 
 | Componente | Propósito |
 |-----------|-----------|
-| **Sidebar** | Navegación lateral fija de 256px. Logo NOC-UPTIME, Deploy Probe button, 5 nav items (Overview activo, Monitors/Incidents/Analytics/Settings inertes), Help/Sign Out abajo. `aria-current="page"`, `aria-disabled`, `tabIndex`, keyboard: Enter/Space |
+| **Sidebar** | Navegación lateral fija de 256px. Logo NOC-UPTIME, Deploy Probe button, 4 nav items funcionales (Overview/Monitors/Analytics/Settings), Help/Sign Out abajo. `activeSection` + `onNavigate` props. `aria-current="page"`, `aria-disabled`, `tabIndex`, keyboard: Enter/Space |
 | **TopBar** | Barra superior con input de búsqueda + SearchDropdown, título "System Monitor", botones: Notifications, Refresh, Terminal. Integra SearchDropdown |
 | **SearchDropdown** | Filtro en vivo por nombre/URL con status dot, latency label, click-outside detection. Memoized |
 | **ErrorBoundary** | Class component. Catch de errores de render, log vía logger.js, fallback UI con Try Again y Reload Page. Dev mode muestra error details |
-| **KpiCard** | Tarjeta compacta (112px) con label, valor monospace, unidad opcional, status dot (primary/warning/error/neutral). Memoized |
+| **KpiCard** | Tarjeta compacta (112px) con label, valor monospace, unidad opcional, status dot (primary/warning/error/neutral), trend prop (↑↓→ con color via status.js). Memoized |
 | **StatCard** | Tarjeta de métrica con título, ícono, valor grande coloreado, unidad. Memoized |
 | **ConfirmModal** | Diálogo accesible con overlay, Escape/Tab key trap, focus management, danger/default variant |
 | **AddSiteForm** | Formulario: URL (monospace), display name, frecuencia (1/5/15 min), loading state, error display |
-| **SitiosTable** | Tabla responsiva con status dot/color, nombre, URL (tablet+), latencia, frecuencia (desktop+), menú contextual por fila para eliminar. `db-row-menu-btn` aparece en hover |
+| **SitiosTable** | Tabla responsiva con status dot/color, nombre, URL (tablet+), latencia, frecuencia (desktop+), menú contextual por fila para eliminar. Columnas ordenables (status/name/latency/frequency), status filter bar (All/Passing/Warning/Slow/Down/Sin datos), paginación (10/20/50), integración con searchQuery, dual classification + ultimoLog. `db-row-menu-btn` aparece en hover |
 | **LatencyChart** | Chart.js line chart con líneas de referencia en 200ms/400ms, tema oscuro, tooltips con datetime completo. Estados: 0 logs (null), 1 log (firstDataBox), 2-4 (sparse), 5+ (full). Memoized |
 | **LatencyGauge** | SVG arc gauge 0-180°, colores: verde <200ms, amarillo 200-400ms, rojo >400ms, gris si null. Aguja rotada. Memoized |
 | **DarkVeil** | Shader WebGL (OGL) con CPPN, hueShift, noise, scanlines, warp. Fondo animado de WelcomePage |
@@ -163,7 +164,8 @@ created_at  TIMESTAMP DEFAULT NOW()
 |------|-----------|
 | **usePolling(callback, intervalMs, {enabled})** | Polling con protección de concurrencia (pendingRef). Devuelve `{refresh}` |
 | **useDebounce(value, delay)** | Debounce de valor (default 300ms) |
-| **useDashboardMetrics(sitios)** | Calcula KPIs: passing (<200ms), warnings (>=200ms online), failed (offline), avgLatencia (de online con latencia) |
+| **useDashboardData(token, options)** | Hook central del dashboard. Llama GET /sitios/summary con polling (10s). Devuelve `{data, loading, error, refresh, range, setRange, resumen, tendencias, sitios, totalSitios, totalChequeos}` |
+| **useDashboardMetrics(sitios)** | Calcula KPIs locales: passing/warnings/failed/avgLatencia. Ya no se usa en DashboardPage |
 | **useMobileDetection()** | `isMobile = window.innerWidth <= 768`. Se actualiza en resize |
 | **useStaggerReveal(ref, options)** | Animación staggered con IntersectionObserver + GSAP. Respeta `prefers-reduced-motion` |
 | **useSpotlight(containerRef, options)** | Spotlight radial que sigue el mouse y ajusta glow en `.magic-glow-card`. GSAP + CSS custom properties |
@@ -213,9 +215,8 @@ API (Express):
   GET /sitios/:id/stats → métricas agregadas
 
 Frontend Dashboard:
-  usePolling(loadSitios, 10000) → cada 10s:
-    GET /sitios → Promise.allSettled(getLogs por sitio) → setSitios con ultimoLog
-  useDashboardMetrics → KPIs (passing/warnings/failed/avgLatencia)
+  useDashboardData(token) → cada 10s:
+    GET /sitios/summary?range=24h → {resumen, tendencias, sitios}
   useSpotlight(contentRef) → efecto glow en cards
   useStaggerReveal(kpiGridRef) → animación de entrada
 
@@ -263,7 +264,7 @@ Frontend Detail:
 
 **Setup:** `client/src/test/setup.js` — import `@testing-library/jest-dom`, mock `matchMedia`, polyfill `IntersectionObserver`
 
-**Total:** 211 tests, 20 suites, 0 fallos. **0 regresiones.**
+**Total:** 410 frontend + 68 backend = **478 tests**, 30 suites, 0 fallos. **0 regresiones.**
 
 ### Cobertura actual
 
@@ -296,13 +297,13 @@ client/src/test/
 │   ├── KpiCard.test.jsx      — 8 tests, B
 │   ├── LatencyChart.test.jsx — 6 tests, C (chart.js no mockeado)
 │   ├── LatencyGauge.test.jsx — 12 tests, A-
-│   ├── SitiosTable.test.jsx  — 17 tests, A-
+│   ├── SitiosTable.test.jsx  — 20 tests, A-
 │   └── StatCard.test.jsx     — 6 tests, B
 ├── contexts/
 │   ├── AuthContext.test.jsx  — 17 tests, nuevo
 │   └── ToastContext.test.jsx — 14 tests, nuevo
 ├── pages/
-│   ├── DashboardPage.test.jsx  — 6 tests, B
+│   ├── DashboardPage.test.jsx  — 9 tests, B
 │   └── SitioDetailPage.test.jsx — 7 tests, B
 ├── services/
 │   └── api.test.js           — 16 tests, nuevo
@@ -323,7 +324,7 @@ server/src/__tests__/
 - Auth: register, login, JWT, bcrypt, persistencia de sesión, restauración al recargar
 - CRUD sitios: crear, listar, eliminar (cada uno con verificación de pertenencia)
 - Worker: node-cron cada 1 minuto, concurrencia 5, filtro por frecuencia_minutos, fetchWithRetry con backoff
-- Endpoints: /stats (métrica agregada), /logs (últimos 10), /health
+- Endpoints: /stats (métrica agregada), /logs (últimos 10), /health, /summary
 - Dashboard completo con Sidebar, TopBar, KPI cards, AddSiteForm, SitiosTable, Particles background
 - SitioDetailPage con StatCards, LatencyGauge, LatencyChart (lazy-loaded), skeleton loading
 - SearchDropdown con filtro en vivo, click-outside, status dots
@@ -337,6 +338,9 @@ server/src/__tests__/
 - Auditoría profunda de métricas: thresholds SLOW/WARN/UP, filtros null-safety, formatLocalTime con regex
 - Testing: servicios (api.js), utilidades (token, formatLocalTime, status), contextos (Auth, Toast)
 - Dashboard redesign: sidebar inline, search dropdown, KPI grid, add probe form
+- F11.1: useDashboardData hook, getDashboardSummary api, RangeSelector component
+- F11.2: SitiosTable sortable/filtered/paginated, status.js helpers (formatLatency, getTrend, getClassificationStatus), KpiCard trend prop
+- F11.3: Sidebar with activeSection navigation (Overview/Monitors/Analytics/Settings), DashboardPage refactored with useDashboardData, 4 section views (Overview/Monitors/Analytics/Settings)
 
 ### 🚧 En progreso
 - Sidebar, TopBar, SearchDropdown, ErrorBoundary sin tests
@@ -350,7 +354,7 @@ server/src/__tests__/
 - useReducedMotion hook (no existe, preferencia inline en SitioDetailPage)
 - Uptime % histórico (7d, 30d)
 - Alertas por email
-- Dashboard Analytics y Settings pages (sidebar items inertes)
+- Dashboard Analytics y Settings pages (contenido real, no placeholder)
 - Lazy loading adicional
 - i18n
 

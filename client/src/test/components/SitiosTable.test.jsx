@@ -57,7 +57,8 @@ describe('SitiosTable', () => {
     render(<SitiosTable sitios={mockSitios} onRowClick={() => {}} onDelete={() => {}} />);
     expect(screen.getByText('Google')).toBeInTheDocument();
     expect(screen.getAllByText('https://example.com').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText('Slow')).toBeInTheDocument();
+    const slowElements = screen.getAllByText('Slow');
+    expect(slowElements.length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Pending')).toBeInTheDocument();
   });
 

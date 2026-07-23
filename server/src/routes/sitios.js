@@ -6,6 +6,159 @@ const { RANGE_MAP, getBucketInterval, validateRange } = require('../utils/range'
 function createSitiosRouter(pool) {
   const router = express.Router();
 
+  function computeTrend(current, previous) {
+    if (current == null || previous == null || previous === 0) return null;
+    const diff = current - previous;
+    const pct = Math.round((diff / previous) * 100);
+    return {
+      direccion: diff > 0 ? 'up' : diff < 0 ? 'down' : 'stable',
+      porcentaje: Math.abs(pct),
+    };
+  }
+
+  router.get('/summary', async (req, res) => {
+    const usuario_id = req.user.id;
+    const range = req.query.range || '24h';
+
+    const rangeConfig = validateRange(range);
+    if (!rangeConfig) {
+      return res.status(400).json({
+        message: `Rango inválido. Valores aceptados: ${Object.keys(RANGE_MAP).join(', ')}`,
+      });
+    }
+
+    const interval = rangeConfig.interval;
+
+    try {
+      const siteQuery = `
+        SELECT
+          s.id, s.url, s.nombre, s.frecuencia_minutos,
+          COUNT(l.*)::int AS total_chequeos,
+          COUNT(l.*) FILTER (WHERE l.is_online = true)::int AS online_chequeos,
+          ROUND(AVG(l.latencia_ms) FILTER (WHERE l.latencia_ms IS NOT NULL))::int AS avg_latencia,
+          MIN(l.latencia_ms) FILTER (WHERE l.latencia_ms IS NOT NULL)::int AS min_latencia,
+          MAX(l.latencia_ms) FILTER (WHERE l.latencia_ms IS NOT NULL)::int AS max_latencia
+        FROM sitios s
+        LEFT JOIN logs l ON l.sitio_id = s.id
+          AND ($2::interval IS NULL OR l.created_at >= NOW() - $2::interval)
+        WHERE s.usuario_id = $1
+        GROUP BY s.id, s.url, s.nombre
+        ORDER BY s.id ASC
+      `;
+
+      const currentResult = await pool.query(siteQuery, [usuario_id, interval]);
+
+      const sites = currentResult.rows;
+      const totalSitios = sites.length;
+
+      let passing = 0, warning = 0, slow = 0, down = 0, sinDatos = 0;
+      let sumLatencia = 0, latenciaCount = 0;
+      let sumOnline = 0, sumChequeos = 0;
+      let minLatenciaGlobal = null, maxLatenciaGlobal = null;
+
+      const sitiosData = sites.map((s) => {
+        const uptime = s.total_chequeos > 0
+          ? Math.round((s.online_chequeos / s.total_chequeos) * 100)
+          : null;
+
+        let clasificacion;
+        if (s.total_chequeos === 0) {
+          clasificacion = 'sin_datos';
+          sinDatos++;
+        } else if (s.online_chequeos / s.total_chequeos < 0.99) {
+          clasificacion = 'down';
+          down++;
+        } else if (s.avg_latencia != null && s.avg_latencia >= 400) {
+          clasificacion = 'slow';
+          slow++;
+        } else if (s.avg_latencia != null && s.avg_latencia >= 200) {
+          clasificacion = 'warning';
+          warning++;
+        } else {
+          clasificacion = 'passing';
+          passing++;
+        }
+
+        if (s.avg_latencia != null) {
+          sumLatencia += s.avg_latencia;
+          latenciaCount++;
+        }
+        sumOnline += s.online_chequeos;
+        sumChequeos += s.total_chequeos;
+        if (s.min_latencia != null && (minLatenciaGlobal == null || s.min_latencia < minLatenciaGlobal)) minLatenciaGlobal = s.min_latencia;
+        if (s.max_latencia != null && (maxLatenciaGlobal == null || s.max_latencia > maxLatenciaGlobal)) maxLatenciaGlobal = s.max_latencia;
+
+        return {
+          id: s.id,
+          url: s.url,
+          nombre: s.nombre,
+          frecuenciaMinutos: s.frecuencia_minutos,
+          avgLatencia: s.avg_latencia,
+          uptime,
+          totalChequeos: s.total_chequeos,
+          clasificacion,
+        };
+      });
+
+      const promedioGlobal = latenciaCount > 0 ? Math.round(sumLatencia / latenciaCount) : null;
+      const uptimeGlobal = sumChequeos > 0 ? Math.round((sumOnline / sumChequeos) * 100) : null;
+
+      let tendencias = null;
+      if (interval != null) {
+        const prevInterval = `2 ${interval.split(' ').slice(1).join(' ')}`;
+        const prevResult = await pool.query(
+          `SELECT
+            COUNT(*)::int AS total_chequeos,
+            ROUND(AVG(latencia_ms) FILTER (WHERE latencia_ms IS NOT NULL))::int AS avg_latencia,
+            COUNT(*) FILTER (WHERE is_online = true)::int AS online_count
+          FROM logs l
+          JOIN sitios s ON s.id = l.sitio_id
+          WHERE s.usuario_id = $1
+            AND l.created_at >= NOW() - $3::interval
+            AND l.created_at < NOW() - $2::interval`,
+          [usuario_id, interval, prevInterval]
+        );
+
+        const prev = prevResult.rows[0];
+
+        if (prev.total_chequeos > 0) {
+          const prevAvgLatencia = prev.avg_latencia;
+          const prevUptime = prev.total_chequeos > 0
+            ? Math.round((prev.online_count / prev.total_chequeos) * 100)
+            : null;
+
+          tendencias = {
+            promedioGlobal: computeTrend(promedioGlobal, prevAvgLatencia),
+            uptimeGlobal: computeTrend(uptimeGlobal, prevUptime),
+            totalChequeos: computeTrend(sumChequeos, prev.total_chequeos),
+          };
+        }
+      }
+
+      res.json({
+        range,
+        totalSitios,
+        totalChequeos: sumChequeos,
+        resumen: {
+          passing,
+          warning,
+          slow,
+          down,
+          sinDatos,
+          promedioGlobal,
+          uptimeGlobal,
+          minLatencia: minLatenciaGlobal,
+          maxLatencia: maxLatenciaGlobal,
+        },
+        tendencias,
+        sitios: sitiosData,
+      });
+    } catch (err) {
+      console.error('Error obteniendo sumario del dashboard:', err);
+      res.status(500).json({ message: 'Error obteniendo sumario del dashboard' });
+    }
+  });
+
   router.get('/:id/stats', validate(idParamSchema, 'params'), async (req, res) => {
     const sitioId = req.params.id;
     const usuario_id = req.user.id;

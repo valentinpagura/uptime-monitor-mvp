@@ -1,5 +1,5 @@
 import { memo, useMemo, useRef, useEffect } from 'react';
-import { getStatus } from '../utils/status';
+import { getStatus, formatLatency } from '../utils/status';
 
 export const SearchDropdown = memo(function SearchDropdown({ query, sitios, onSelect, onClose }) {
   const ref = useRef(null);
@@ -30,7 +30,7 @@ export const SearchDropdown = memo(function SearchDropdown({ query, sitios, onSe
       {results.map((sitio) => {
         const log = sitio.ultimoLog;
         const status = getStatus(log);
-        const latencyLabel = !log ? '\u2014' : !log.is_online ? 'Timeout' : log.latencia_ms != null ? `${log.latencia_ms}ms` : '\u2014';
+        const latencyLabel = formatLatency(log);
         return (
           <div key={sitio.id} className="db-search-dropdown-item" style={styles.item} onClick={() => onSelect(sitio.id)}>
             <div style={styles.itemLeft}>

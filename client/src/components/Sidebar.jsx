@@ -1,11 +1,10 @@
 import { useCallback } from 'react';
 
 const NAV_ITEMS = [
-  { id: 'overview',  label: 'Overview',  icon: '\uD83D\uDCCA', active: true },
-  { id: 'monitors',  label: 'Monitors',  icon: '\uD83E\uDEBA', inert: true },
-  { id: 'incidents', label: 'Incidents', icon: '\u26A0\uFE0F', inert: true },
-  { id: 'analytics', label: 'Analytics', icon: '\uD83D\uDCC8', inert: true },
-  { id: 'settings',  label: 'Settings',  icon: '\u2699\uFE0F', inert: true },
+  { id: 'overview',  label: 'Overview',  icon: '\uD83D\uDCCA' },
+  { id: 'monitors',  label: 'Monitors',  icon: '\uD83E\uDEBA' },
+  { id: 'analytics', label: 'Analytics', icon: '\uD83D\uDCC8' },
+  { id: 'settings',  label: 'Settings',  icon: '\u2699\uFE0F' },
 ];
 
 const BOTTOM_ITEMS = [
@@ -13,7 +12,7 @@ const BOTTOM_ITEMS = [
   { id: 'signout', label: 'Sign Out', icon: '\uD83D\uDEAA' },
 ];
 
-export function Sidebar({ onAddProbe, onLogout }) {
+export function Sidebar({ activeSection = 'overview', onNavigate, onAddProbe, onLogout }) {
   const handleAddProbe = useCallback(() => {
     onAddProbe?.();
   }, [onAddProbe]);
@@ -22,8 +21,25 @@ export function Sidebar({ onAddProbe, onLogout }) {
     onLogout?.();
   }, [onLogout]);
 
+  const handleNavClick = useCallback(
+    (sectionId) => {
+      onNavigate?.(sectionId);
+    },
+    [onNavigate],
+  );
+
+  const handleNavKeyDown = useCallback(
+    (e, sectionId) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        onNavigate?.(sectionId);
+      }
+    },
+    [onNavigate],
+  );
+
   return (
-      <nav style={styles.nav} className="db-sidebar" aria-label="Main navigation">
+    <nav style={styles.nav} className="db-sidebar" aria-label="Main navigation">
       <div style={styles.logoSection}>
         <div style={styles.logoIcon}>
           <span style={styles.logoEmoji}>{'\uD83D\uDCBB'}</span>
@@ -39,26 +55,29 @@ export function Sidebar({ onAddProbe, onLogout }) {
         Deploy Probe
       </button>
 
-      <ul style={styles.navList}>
-        {NAV_ITEMS.map((item) => (
-          <li
-            key={item.id}
-            className={
-              item.active
-                ? 'sidebar-nav-item sidebar-nav-item--active'
-                : item.inert
-                  ? 'sidebar-nav-item sidebar-nav-item--inert'
+      <ul style={styles.navList} role="menubar">
+        {NAV_ITEMS.map((item) => {
+          const isActive = activeSection === item.id;
+          return (
+            <li
+              key={item.id}
+              className={
+                isActive
+                  ? 'sidebar-nav-item sidebar-nav-item--active'
                   : 'sidebar-nav-item'
-            }
-            style={styles.navItem}
-            aria-current={item.active ? 'page' : undefined}
-            aria-disabled={item.inert ? true : undefined}
-            role="menuitem"
-          >
-            <span style={styles.navIcon}>{item.icon}</span>
-            <span>{item.label}</span>
-          </li>
-        ))}
+              }
+              style={styles.navItem}
+              aria-current={isActive ? 'page' : undefined}
+              role="menuitem"
+              tabIndex={0}
+              onClick={() => handleNavClick(item.id)}
+              onKeyDown={(e) => handleNavKeyDown(e, item.id)}
+            >
+              <span style={styles.navIcon}>{item.icon}</span>
+              <span>{item.label}</span>
+            </li>
+          );
+        })}
       </ul>
 
       <ul style={styles.bottomList}>
@@ -182,6 +201,7 @@ const styles = {
     borderRadius: '8px',
     color: 'var(--auth-on-surface-variant)',
     fontSize: '14px',
+    cursor: 'pointer',
   },
   navIcon: {
     fontSize: '20px',

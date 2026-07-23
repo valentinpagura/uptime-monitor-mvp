@@ -23,7 +23,6 @@ describe('Sidebar', () => {
     renderSidebar();
     expect(screen.getByText('Overview')).toBeInTheDocument();
     expect(screen.getByText('Monitors')).toBeInTheDocument();
-    expect(screen.getByText('Incidents')).toBeInTheDocument();
     expect(screen.getByText('Analytics')).toBeInTheDocument();
     expect(screen.getByText('Settings')).toBeInTheDocument();
   });
@@ -42,8 +41,8 @@ describe('Sidebar', () => {
 
   it('marks inert items with aria-disabled="true"', () => {
     renderSidebar();
-    const monitors = screen.getByText('Monitors').closest('[aria-disabled]');
-    expect(monitors).toHaveAttribute('aria-disabled', 'true');
+    const help = screen.getByText('Help').closest('[aria-disabled]');
+    expect(help).toHaveAttribute('aria-disabled', 'true');
   });
 
   it('marks Help as inert with aria-disabled', () => {

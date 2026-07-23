@@ -1,5 +1,6 @@
 import { memo, useRef } from 'react';
 import { useMagicEffects } from '../hooks/useMagicEffects';
+import { getTrendIcon, getTrendColor, formatTrend } from '../utils/status';
 
 const DOT_COLORS = {
   primary: { border: 'rgba(207, 188, 255, 0.3)', dot: 'var(--auth-primary)' },
@@ -7,9 +8,10 @@ const DOT_COLORS = {
   error: { border: 'rgba(255, 180, 171, 0.3)', dot: 'var(--auth-error)' },
 };
 
-export const KpiCard = memo(function KpiCard({ label, value, unit, variant = 'neutral' }) {
+export const KpiCard = memo(function KpiCard({ label, value, unit, variant = 'neutral', trend }) {
   const cardRef = useRef(null);
   const dotStyle = DOT_COLORS[variant];
+  const hasTrend = trend != null;
 
   useMagicEffects(cardRef);
 
@@ -31,9 +33,19 @@ export const KpiCard = memo(function KpiCard({ label, value, unit, variant = 'ne
       ) : (
         <span style={styles.value}>{value != null ? value : '\u2014'}</span>
       )}
+
+      {hasTrend && (
+        <span style={{ ...styles.trend, color: getTrendColor(trend) }}>
+          {formatTrend(trend)}
+        </span>
+      )}
     </div>
   );
 });
+
+KpiCard.defaultProps = {
+  trend: null,
+};
 
 const styles = {
   cardBase: {
@@ -48,7 +60,7 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'space-between',
-    height: '112px',
+    minHeight: '112px',
   },
   dotOuter: {
     position: 'absolute',
@@ -89,5 +101,11 @@ const styles = {
     fontFamily: "'Courier New', Courier, monospace",
     color: 'var(--auth-on-surface-variant)',
     paddingBottom: '4px',
+  },
+  trend: {
+    fontSize: '11px',
+    fontWeight: 600,
+    fontFamily: "'Courier New', Courier, monospace",
+    marginTop: '2px',
   },
 };

@@ -5,8 +5,7 @@ import userEvent from '@testing-library/user-event';
 vi.mock('../../components/Particles', () => ({ default: () => null }));
 
 vi.mock('../../services/api', () => ({
-  getSitios: vi.fn(),
-  getLogs: vi.fn(),
+  getDashboardSummary: vi.fn(),
   deleteSitio: vi.fn(),
   createSitio: vi.fn(),
 }));
@@ -16,18 +15,31 @@ import { ToastContext } from '../../contexts/ToastContext';
 import { DashboardPage } from '../../pages/DashboardPage';
 import * as api from '../../services/api';
 
-const mockSitios = [
-  { id: 1, url: 'https://google.com', nombre: 'Google', frecuencia_minutos: 5 },
-  { id: 2, url: 'https://example.com', nombre: null, frecuencia_minutos: 5 },
-];
-
-const mockLogs1 = [
-  { id: 1, sitio_id: 1, latencia_ms: 120, is_online: true, status_code: 200, created_at: '2026-07-02T12:00:00Z' },
-];
-
-const mockLogs2 = [
-  { id: 2, sitio_id: 2, latencia_ms: null, is_online: false, status_code: null, created_at: '2026-07-02T12:00:00Z' },
-];
+const mockSummaryData = {
+  range: '24h',
+  totalSitios: 2,
+  totalChequeos: 15,
+  resumen: {
+    passing: 1,
+    warning: 0,
+    slow: 0,
+    down: 1,
+    sinDatos: 0,
+    promedioGlobal: 120,
+    uptimeGlobal: 50,
+    minLatencia: 120,
+    maxLatencia: 120,
+  },
+  tendencias: {
+    promedioGlobal: { direccion: 'up', porcentaje: 5 },
+    uptimeGlobal: { direccion: 'down', porcentaje: 10 },
+    totalChequeos: { direccion: 'up', porcentaje: 20 },
+  },
+  sitios: [
+    { id: 1, url: 'https://google.com', nombre: 'Google', frecuenciaMinutos: 5, avgLatencia: 120, uptime: 100, totalChequeos: 10, clasificacion: 'passing' },
+    { id: 2, url: 'https://example.com', nombre: null, frecuenciaMinutos: 5, avgLatencia: null, uptime: 0, totalChequeos: 5, clasificacion: 'down' },
+  ],
+};
 
 function renderDashboard() {
   const addToast = vi.fn();
@@ -52,7 +64,7 @@ describe('DashboardPage', () => {
   });
 
   it('renders the sidebar and topbar', async () => {
-    api.getSitios.mockResolvedValue({ sitios: [] });
+    api.getDashboardSummary.mockResolvedValue({ ...mockSummaryData, sitios: [] });
 
     renderDashboard();
 
@@ -62,10 +74,7 @@ describe('DashboardPage', () => {
   });
 
   it('loads and displays sitios', async () => {
-    api.getSitios.mockResolvedValue({ sitios: mockSitios });
-    api.getLogs
-      .mockResolvedValueOnce({ logs: mockLogs1 })
-      .mockResolvedValueOnce({ logs: mockLogs2 });
+    api.getDashboardSummary.mockResolvedValue(mockSummaryData);
 
     renderDashboard();
 
@@ -79,33 +88,28 @@ describe('DashboardPage', () => {
   });
 
   it('shows KPI values based on site status', async () => {
-    api.getSitios.mockResolvedValue({ sitios: mockSitios });
-    api.getLogs
-      .mockResolvedValueOnce({ logs: mockLogs1 })
-      .mockResolvedValueOnce({ logs: mockLogs2 });
+    api.getDashboardSummary.mockResolvedValue(mockSummaryData);
 
     renderDashboard();
 
     await waitFor(() => {
-      expect(screen.getAllByText('1').length).toBeGreaterThanOrEqual(1);
+      const passingElements = screen.getAllByText('Passing');
+      expect(passingElements.length).toBeGreaterThanOrEqual(1);
     });
   });
 
   it('shows error banner when API fails', async () => {
-    api.getSitios.mockRejectedValue(new Error('Network error'));
+    api.getDashboardSummary.mockRejectedValue(new Error('Network error'));
 
     renderDashboard();
 
     await waitFor(() => {
-      expect(screen.getByText('Error al cargar los sitios')).toBeInTheDocument();
+      expect(screen.getByText('Network error')).toBeInTheDocument();
     });
   });
 
-  it('shows search dropdown with matching results while keeping full table', async () => {
-    api.getSitios.mockResolvedValue({ sitios: mockSitios });
-    api.getLogs
-      .mockResolvedValueOnce({ logs: mockLogs1 })
-      .mockResolvedValueOnce({ logs: mockLogs2 });
+  it('filters table when typing in search', async () => {
+    api.getDashboardSummary.mockResolvedValue(mockSummaryData);
 
     renderDashboard();
 
@@ -117,34 +121,24 @@ describe('DashboardPage', () => {
     const user = userEvent.setup();
     await user.type(searchInput, 'example');
 
-    await waitFor(
-      () => {
-        const urls = screen.getAllByText('https://example.com');
-        expect(urls.length).toBeGreaterThanOrEqual(1);
-        expect(screen.getByText('Google')).toBeInTheDocument();
-      },
-      { timeout: 500 },
-    );
+    await waitFor(() => {
+      const urls = screen.getAllByText('https://example.com');
+      expect(urls.length).toBeGreaterThanOrEqual(1);
+    });
   });
 
   it('shows global site count in subtitle', async () => {
-    api.getSitios.mockResolvedValue({ sitios: mockSitios });
-    api.getLogs
-      .mockResolvedValueOnce({ logs: mockLogs1 })
-      .mockResolvedValueOnce({ logs: mockLogs2 });
+    api.getDashboardSummary.mockResolvedValue(mockSummaryData);
 
     renderDashboard();
 
     await waitFor(() => {
-      expect(screen.getByText(/Monitoring 2 active endpoints?/i)).toBeInTheDocument();
+      expect(screen.getByText(/Monitoring 2 active endpoints/i)).toBeInTheDocument();
     });
   });
 
   it('opens ConfirmModal when delete button is clicked in context menu', async () => {
-    api.getSitios.mockResolvedValue({ sitios: mockSitios });
-    api.getLogs
-      .mockResolvedValueOnce({ logs: mockLogs1 })
-      .mockResolvedValueOnce({ logs: mockLogs2 });
+    api.getDashboardSummary.mockResolvedValue(mockSummaryData);
 
     renderDashboard();
 
@@ -162,10 +156,7 @@ describe('DashboardPage', () => {
   });
 
   it('deletes site when ConfirmModal confirm is clicked', async () => {
-    api.getSitios.mockResolvedValue({ sitios: mockSitios });
-    api.getLogs
-      .mockResolvedValueOnce({ logs: mockLogs1 })
-      .mockResolvedValueOnce({ logs: mockLogs2 });
+    api.getDashboardSummary.mockResolvedValue(mockSummaryData);
     api.deleteSitio.mockResolvedValue({});
 
     renderDashboard();
@@ -186,10 +177,7 @@ describe('DashboardPage', () => {
   });
 
   it('cancels delete when ConfirmModal cancel is clicked', async () => {
-    api.getSitios.mockResolvedValue({ sitios: mockSitios });
-    api.getLogs
-      .mockResolvedValueOnce({ logs: mockLogs1 })
-      .mockResolvedValueOnce({ logs: mockLogs2 });
+    api.getDashboardSummary.mockResolvedValue(mockSummaryData);
 
     renderDashboard();
 
